@@ -1,0 +1,1 @@
+export PYTHONPATH=/usr/lib/python2.3/site-packages/wx-2.5.3-gtk2-unicode:$PYTHONPATH

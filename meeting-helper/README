@@ -1,0 +1,38 @@
+This is Parliament, a Python module that can be used to build programs which
+monitor or moderate parliamentary procedure. Parliament encapsulates logic and
+bookkeeping functions common to many parliamentary settings. The module can be
+used whether the actual meeting is being held online or offline, in real-time
+or asynchronously, via voice or via email. Parliament is intended to be
+embedded in a larger application which provides functionality such as chairing
+an online meeting, or assisting participants in an offline meeting.
+
+Parliament's central functions keep track of and perform inference about
+meeting state. Parliament keeps track of which motions are in progress, the
+relationships between them, and the history of the meeting. The client program
+is responsible for informing the Parliament module about events as they occur
+in the meeting, such as "this person made motion X", or, "motion Y was just
+put to a vote and rejected". Parliament answers queries such as "Which motions
+are valid at the current time?", or "Which motions have been passed in this
+meeting?". Parliament is also capable of answering questions about
+hypothetical situations, such as "Which motion is up for debate if this one
+passes?"
+
+Parliament is geared towards meetings based on motions, but it is not tied to
+any particular set of motions or of parliamentary rules. It allows the user or
+developer to specify the parliamentary rules in effect for a given meeting via
+a flexible and extensible custom language.
+
+Parliament is provided "as is" with no warranty.  The exact terms under which
+you may use and (re)distribute this program are detailed in the GNU General
+Public License, in the file COPYING.
+
+See the files AUTHORS and THANKS for a list of authors and other contributors.
+
+See the file INSTALL for installation instructions.
+
+See the file NEWS for a description of major changes in this release.
+
+See the file TODO for ideas on how you could help us improve Parliament.
+
+To report bugs or read about the current status of the project, visit
+http://parliament.sourceforge.net/

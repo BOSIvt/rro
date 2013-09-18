@@ -1,0 +1,417 @@
+\documentclass{seminar}
+\usepackage[usenames]{color}
+\usepackage{framed}
+
+\flushheadingstop
+
+== {\color{MidnightBlue} Parliament}: a module for ==
+
+
+== parliamentary procedure software ==
+
+\centering
+
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+
+\begin{center}
+{\color{BrickRed}Bayle Shanks} and {\color{BrickRed}Dana Dahlstrom}
+\end{center}
+
+%% not just targeted at software devels; promise to try and make it interesting to others too
+
+----
+
+== Contents ==
+
+* Why Parliament? 
+* How do you use it?
+** Overview
+** Some sample function calls
+** An example session
+* What do the ruleset specifications look like?
+
+
+----
+
+== Why Parliament? ==
+
+=== Can be used in different applications ===
+
+\centering
+
+\begin{graph}
+size="2,2"
+rankdir="LR"
+node [shape="box"]
+p [label="Parliament", shape=ellipse]
+x [label="application"]
+y [label=$\vdots$, shape=plaintext]
+z [label="application"]
+p->x
+p->y
+p->z
+\end{graph}
+
+
+----
+== Why Parliament? ==
+=== Can be used with different rulesets ===
+
+\centering
+
+\begin{graph}
+size="3,3"
+rankdir="LR"
+node [shape="box"]
+a [label="ruleset"]
+b [label=$\vdots$, shape=plaintext]
+c [label="ruleset"]
+x [label="application"]
+y [label=$\vdots$, shape=plaintext]
+z [label="application"]
+p [label="Parliament", shape=ellipse]
+a -> p [dir=none]
+b -> p [dir=none]
+c -> p [dir=none]
+p->x
+p->y
+p->z
+\end{graph}
+
+
+
+
+
+----
+
+== How to use Parliament in your program ==
+
+\centering
+
+\begin{graph}
+  rankdir=LR;
+  size="4,4";
+  node [ shape=box ];
+  subgraph clusterA {
+    label = "application";
+    color = black;
+    pm [label="Parliament\nmodule", color="blue", fontcolor="blue"]
+    pm->"user\ninterface" [style=invis];
+  }
+  "rule\nspecification"->pm [dir=none];
+\end{graph}
+
+
+%% and we wrote a rule spec for the rules which are most useful for a live meeting
+
+----
+
+== How to use Parliament in your program ==
+
+
+
+__Your program__ does this:
+* {\color{BrickRed}Tells} Parliament what's happening
+* {\color{BrickRed}Asks} Parliament what the rules allow
+
+
+__Parliament__ does this:
+* {\color{MidnightBlue}Keeps track of} meeting state
+* Handles {\color{MidnightBlue}parliamentary logic} 
+
+----
+
+== How to use Parliament in your program: ==
+== Example functions ==
+
+
+==== Initialize Parliament: ====
+\bigskip
+\begin{framed}
+\begin{verbatim}
+import Parliament
+
+meeting_object = 
+   Parliament.Parliament('rro_default_ruleset')
+meeting_object.initState()
+\end{verbatim}
+\end{framed}
+
+%% this is the ruleset i mentioned earlier that we developed for the meeting helper
+
+----
+
+
+==== Ask which actions are {\color{MidnightBlue}allowed by the rules}: ====
+\begin{framed}
+\begin{verbatim}
+validActs = meeting_object.currentValidActs()
+\end{verbatim}
+\end{framed}
+
+
+
+==== {\color{MidnightBlue}Ask} what the currently pending motion is: ====
+\begin{framed}
+\begin{verbatim}
+meeting_object.getOpenInitiatives()[0]
+\end{verbatim}
+\end{framed}
+
+==== {\color{MidnightBlue}Ask} for the meeting history: ====
+\begin{framed}
+\begin{verbatim}
+list = meeting_object.getMeetingEventHistory()
+\end{verbatim}
+\end{framed}
+
+
+----
+
+==== {\color{MidnightBlue}Tell} Parliament that someone has made a motion: ====
+
+\begin{framed}
+\begin{verbatim}
+meeting_object.applyToDefaultPosition(motion)
+\end{verbatim}
+\end{framed}
+
+==== {\color{MidnightBlue}Tell} Parliament that a motion has been adopted: ====
+
+\begin{framed}
+\begin{verbatim}
+meeting_object.motionAdopted()
+\end{verbatim}
+\end{framed}
+
+==== {\color{MidnightBlue}Tell} Parliament how many votes a motion got, and request that it {\color{MidnightBlue}infer} if the motion was adopted: ====
+
+\begin{framed}
+\begin{verbatim}
+motion.affirmativeVotes = 5
+motion.negativeVotes = 4
+meeting_object.finalizeVote(motion)
+\end{verbatim}
+\end{framed}
+
+
+----
+
+
+==== {\color{MidnightBlue}Undo and redo}: ====
+\bigskip
+\begin{framed}
+\begin{verbatim}
+meeting_object.goBack()
+meeting_object.goBack()
+meeting_object.goFwd()
+\end{verbatim}
+\end{framed}
+
+
+----
+
+
+== Example interactive session==
+
+=== {\color{BrickRed}Initialize} ===
+\bigskip
+\begin{framed}
+\begin{verbatim}
+Python 2.3.4c1 (#2, May 13 2004, 21:46:36) 
+[GCC 3.3.3 (Debian 20040429)] on linux2
+Type "help", "copyright", "credits" or "license" for 
+more information.
+>>> import Parliament
+
+>>> meeting_object = Parliament.Parliament(
+      'rro_default_ruleset')
+
+>>> meeting_object.initState()
+\end{verbatim}
+\end{framed}
+
+
+----
+
+\centering
+\fbox{\includegraphics[scale=.5]{beginningOfMtngTree.eps}}
+
+
+=== {\color{BrickRed}Get a list of legal actions} ===
+
+\bigskip
+\begin{framed}
+\begin{verbatim}
+>>> validActs = meeting_object.currentValidActs()
+
+>>> validActs
+['main_motion', 'rescind', 'reconsider', 
+'make_a_special_order', 'make_a_general_order', 
+...
+\end{verbatim}
+\end{framed}
+
+
+----
+
+
+=== {\color{BrickRed}Make a __main motion__} ===
+
+\bigskip
+\begin{framed}
+\begin{verbatim}
+>>> meeting_object.applyToDefaultPosition(
+      'main_motion')
+\end{verbatim}
+\end{framed}
+
+\centering
+\fbox{\includegraphics[scale=.5]{mainMotionTree.eps}}
+
+----
+
+=== {\color{BrickRed}Get currently pending motion and } ===
+=== {\color{BrickRed}list of legal actions} ===
+
+\bigskip
+\begin{framed}
+\begin{verbatim}
+>>> meeting_object.getOpenInitiatives()[0]
+<rro_default_ruleset.main_motion instance at 0x402c...
+>>> validActs = meeting_object.currentValidActs()
+>>> validActs
+['division_of_the_assembly', 
+'motion_related_to_voting', 
+'lay_on_the_table', 
+'previous_question', 
+...
+\end{verbatim}
+\end{framed}
+
+
+----
+
+=== {\color{BrickRed}Make a __Motion to Lay on the Table__} ===
+
+\begin{framed}
+\begin{verbatim}
+>>> meeting_object.applyToDefaultPosition(
+       'lay_on_the_table')
+\end{verbatim}
+\end{framed}
+
+\centering
+\fbox{\includegraphics[scale=.5]{mainMotionLayOnTableTree.eps}}
+
+----
+
+=== {\color{BrickRed}Get currently pending motion and } ===
+=== {\color{BrickRed}its parent } ===
+
+\centering
+\fbox{\includegraphics[scale=.5]{mainMotionLayOnTableTree.eps}}
+
+\begin{framed}
+\begin{verbatim}
+>>> currently_pending = 
+      meeting_object.getOpenInitiatives()[0]
+>>> currently_pending
+<rro_default_ruleset.lay_on_the_table instance at ...>
+>>> currently_pending.parentInitiative()
+<rro_default_ruleset.main_motion instance at 0x402...>
+\end{verbatim}
+\end{framed}
+
+
+----
+
+=== {\color{BrickRed}Vote on motion and automatically infer result } ===
+
+\bigskip
+\begin{framed}
+\begin{verbatim}
+>>> currently_pending.affirmativeVotes = 5
+>>> currently_pending.negativeVotes = 4
+>>> meeting_object.finalizeVote(currently_pending)
+\end{verbatim}
+\end{framed}
+
+\centering
+\fbox{\includegraphics[scale=.5]{mainMotionLayOnTableTree.eps}}
+\\\smallskip{\Huge $\Rightarrow$}\\
+\fbox{\includegraphics[scale=.5]{beginningOfMtngTree.eps}}
+
+
+
+
+
+----
+
+=== {\color{BrickRed}Get meeting event history} ===
+
+
+
+\centering
+\fbox{\includegraphics[scale=.5]{mainMotionLayOnTableHistory.eps}}
+
+
+\bigskip
+\begin{framed}
+\begin{verbatim}
+>>> meeting_object.getMeetingEventHistory()
+[<rro_default_ruleset.main_motion instance at 0x...>, 
+ <rro_default_ruleset.lay_on_the_table instance 
+  at 0x402c7fcc>]
+\end{verbatim}
+\end{framed}
+
+----
+
+
+
+=== {\color{BrickRed}Get the results of past motions} ===
+
+
+\bigskip
+\begin{framed}
+\begin{verbatim}
+>>> oldLayOnTheTable = 
+       meeting_object.getMeetingEventHistory()[1]
+>>> oldLayOnTheTable.getMotionResultInPastTense()
+'adopted'
+>>> oldMainMotion = 
+       meeting_object.getMeetingEventHistory()[0]
+>>> oldMainMotion.getMotionResultInPastTense()
+'tabled'
+\end{verbatim}
+\end{framed}
+
+
+----
+
+%%
+\begin{latex}
+{\tt ----------------- \\
+{\color{BrickRed} name}:\ Lay on the table \\
+{\color{BrickRed} type}:\ Subsidiary motion \\
+{\color{BrickRed} summary}:\ "Temporarily lay a question aside" \\
+{\color{BrickRed} debatable}:\ no \\
+{\color{BrickRed} vote required}:\ "majority" \\
+
+{\color{BrickRed} reconsiderable}:\ ONLY WHEN ({\color{BrickRed}was\_adopted}) \\
+{\color{BrickRed} on adopt}:\ TABLE TARGET \\
+\\
+{\color{BrickRed}\{}\\
+def example\_method(self):}\begin{verbatim}
+     print 'This is embedded Python code'\end{verbatim}
+{\color{BrickRed}\}}\\
+\\
+{\tt -----------------}
+\end{latex}
+
+----

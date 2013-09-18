@@ -1,0 +1,10 @@
+easyLatexGraph*
+*.aux
+*.dvi
+*.log
+*.tex
+*.ps
+*.pdf
+*.blg
+*.bbl
+*.out

@@ -1,0 +1,231 @@
+%% $Id: sw-paper-2006.txt,v 1.7 2006/01/31 10:17:28 bshanks Exp $
+\documentclass{book}
+
+%% from http://www.acm.org/sigs/pubs/proceed/template.html
+
+\def\realappendix{\par
+\setcounter{section}{0}
+ \setcounter{subsection}{0}
+ \def\thesection{\Alph{section}} }
+
+\usepackage[DRAFT]{cslipubs}
+
+\usepackage[comma]{natbib}
+
+\usepackage{chapterbib}
+
+
+
+
+\usepackage[usenames]{color}
+\usepackage{framed}
+\usepackage{verbatim}
+%%\usepackage[bookmarks=true, colorlinks=true, linkcolor=blue, citecolor=blue,urlcolor=blue]{hyperref}
+
+\definecolor{shadecolor}{rgb}{0.9,0.9,0.9}
+
+
+%%\dontcentergraphs
+\dontusepackage{graphicx}
+
+%%\conferenceinfo{Online Deliberation 2005}{Stanford, California USA}
+%%\setpagenumber{50}
+%%\CopyrightYear{2005} 
+%%\crdata{0-12345-67-8/90/01}  % Allows default copyright data (X-XXXXX-XX-X/XX/XX) 
+\begin{latex}
+
+%%\title{Parliament: a module for parliamentary procedure software}
+%%\subtitle{[Extended Abstract]}
+
+%%\numberofauthors{2}
+\maketitle
+\achapter{Parliament: a module for parliamentary procedure software}{Bayle Shanks and Dana B. Dahlstrom}
+%%\alignauthor Bayle Shanks\\
+%%       \affaddr{Computational Neurobiology}\\
+%%       \affaddr{University of California, San Diego}\\
+%%       \affaddr{9500 Gilman Dr}\\ 
+%%       \affaddr{La Jolla, CA 92093}\\
+%%       \email{bshanks at ucsd.edu}
+%%\alignauthor Dana Dahlstrom\\
+%%       \affaddr{University of California, San Diego}\\
+%%       \affaddr{9500 Gilman Dr}\\ 
+%%       \affaddr{La Jolla, CA 92093}\\
+%%       \email{dana at cs.ucsd.edu}
+%%}
+
+\date{28 April 2005}
+\end{latex}
+
+\usepackage{times}
+
+\title{book name}
+\author{editor names}
+
+
+
+%%\begin{abstract}
+\section*{Abstract}
+Parliamentary procedure is a widely used system of rules for group decision making. We describe a reusable software module, __Parliament__, that implements the logic and bookkeeping of parliamentary procedure, given a precise specification of the rules. For use with the module, we have also created a partial working specification of __Robert's Rules of Order__. __Parliament__ is designed to be embedded in applications, such as to support face-to-face meetings or to facilitate computer-mediated online deliberation. 
+%%\end{abstract}
+
+
+
+%% from http://www.acm.org/class/1998/
+%%\category{J.7}{Computers in other Systems}{}
+%%\category{H.5.3}{Information Interfaces and Presentation}{Group and Organization Interfaces}
+%%\category{H.4}{Information systems applications}{Communications Applications}
+
+
+%% \terms{Design, Human Factors}
+
+
+%%\keywords{Robert's rules, Robert's Rules of Order, parlimentary procedure, meeting, meeting systems, meeting management, group decision support systems, GDSS}
+
+
+\section{Introduction}
+
+__Parliament__ is an open-source software module written in Python\footnote{http://python.org/} that can be used to build programs that follow or moderate the conduct of a deliberative assembly using parliamentary procedure. Parliament encapsulates logic and bookkeeping functions necessary for the function of parliamentary procedure, and can be embedded in applications for face-to-face meetings, or for synchronous or asynchronous computer-mediated communication.
+
+__Parliament__'s central functions track meeting state, such as pending motions, the relationships among them, and business already transacted. The outer application is responsible for informing the Parliament module about events as they occur in the meeting, such as "member X made motion Y" or "motion Y failed." __Parliament__ answers queries such as "Which motions are presently valid?" or "Which motions have been adopted in this meeting?" __Parliament__ is also capable of answering questions about hypothetical situations, such as "Which motion will be pending if the immediately pending motion is adopted?"
+
+The __Parliament__ module does not incorporate the details of parliamentary procedure, such as the motions and customs described in __Robert's Rules of Order__  (\cite{robert:rules}). Instead, __Parliament__ requires an external rule specification, allowing the user or developer to modify the rules independently and even to develop whole new rule systems.
+
+\begin{figure}
+\begin{graph}
+  rankdir=LR;
+  size="3,3";
+  node [ shape=box ];
+  subgraph clusterA {
+    label = "application";
+    color = black;
+    "Parliament\nmodule"->"user\ninterface" [style=invis];
+  }
+  "rule\nspecification"->"Parliament\nmodule" [dir=none];
+\end{graph}
+\caption{The Parliament module is embedded in an application, and uses an external rule specification.}
+\label{fig:components}
+\end{figure}
+
+An expanded version of this paper was presented at the Online Deliberation 2005 conference, and can be found at http://parliament.sf.net. The expanded version contains implementation details and reference material, including descriptions of data structures, the API, and the rule description language.
+
+Using __Parliament__, we have also built a simple "Robert's-rules meeting assistant". For details about the meeting assistant, a survey of related work, and a discussion of design considerations for parliamentary software, please see our companion paper in this volume (\cite{dahlstrom2006}).
+
+\section{A reusable module}
+
+Many software applications could share a common software implementation of parliamentary procedure; for example, applications that:
+
+
+* (for online, synchronous meetings)
+** assist meeting participants during the meeting
+** assist meeting officers during the meeting
+** train people before the meeting\footnote{Non-modular parliamentary procedure training software called __Robert's Rules in Motion__ is available at http://imovethat.com/}
+** provide a networked application which participants use to request the floor and to make and vote on motions
+* (for online, asynchronous meetings ---WWW or other)
+** assist a human chair
+** automatically chair a meeting
+** moderate a large discussion board or wiki according to formal meeting rules
+** automatically update a set of organizational bylaws according to the instructions of an online deliberative assembly
+
+
+It would be inefficient to reimplement the core logic of parliamentary rules and sets of motions for each software project. Instead we offer the __Parliament__ module for use in such applications.
+
+\section{Modular rule specifications}
+
+__Robert's Rules of Order Newly Revised__ is the most common parliamentary authority in the United States, but there are others: older, public domain versions of __Robert's Rules of Order__ and Sturgis's __Standard Code of Parliamentary Procedure__ are examples. Each branch of the U.S. Congress uses its own rules, which are broadly similar to others just mentioned.
+
+Rather than choosing a specific set of parliamentary rules and "hard-coding" them, we designed a single module to accommodate many different parliamentary rulesets. The user or developer may describe new rulesets in a specification language understood by the Parliament module, and the specification is then loaded at runtime (see Fig. \ref{fig:components}). There are many advantages to this approach:
+
+
+
+
+# Different deliberative assemblies use different meeting rules. 
+# Unconventional meeting settings such as the WWW or IRC demand new innovations in parliamentary rules. 
+# Allowing the ruleset to be modified gives the assembly complete flexibility to adapt the software to their needs. Assemblies should not be forced to follow a particular set of meeting rules just because their software can't support the rules that they would really prefer.
+# Research on group decision-making support systems (GDSS) is hindered by the difficulty of isolating the effect of individual components of the group decision-making process. A configurable parliamentary ruleset will serve as the ideal platform for testing fine-grained modifications to a group's process.
+
+
+
+\section{The rule specification language}
+
+
+The rule specification language has a quasi-English syntax. A ruleset is typically written in a separate file and then loaded into the __Parliament__ module upon initialization.
+
+The ruleset is specified in terms of "actions" that participants can take at certain times in the meeting. 
+
+%%% Actions belong to more general action categories, from which they inherit default attribute values. This allows a compact description of motions; for example, the \verb|Motion to make a general order| is a special case of the superclass \verb|Principal Motion|, allowing it to inherit the attribute value \verb|True| for the attribute \verb|debatable|. 
+
+%%% The determination of attribute values can also be computed dynamically at runtime by evaluating expressions. For instance, the value of the \verb|debatable| attribute of the \verb|reconsider| motion is given by the expression \verb|ONLY WHEN PARENT IS debatable|.
+
+%%% The __Parliament__ module uses the ruleset by compiling the object types specified in the ruleset file into Python code. A special compiler was developed for this purpose. Then, the resulting Python code is used as a library by the Parliament module.
+
+The ruleset specification can be arbitrarily expressive; if there is no other way to express some desired behavior, arbitrary Python code can be embedded into the ruleset.
+
+==== Examples of the rule specification language ====
+
+Here's how the motion to "Lay on the table" is defined in the Robert's-rules ruleset (note that the actual definition has a longer summary and is not word-wrapped):
+
+
+%%\begin{figure}
+\begin{shaded}
+\begin{verbatim}
+-----------------
+NAME: Lay on the table 
+MOTION TO FORM OF NAME: "Motion to lay 
+on the table"
+
+TYPE: Subsidiary motion
+
+SUMMARY: "The objective of this motion is to 
+temporarily lay a question aside"
+
+motion precedence: 1
+debatable: NO
+amendable: NO
+subsidiaries allowed: NO
+reconsiderable: ONLY WHEN (WAS_ACCEPTED)
+
+TARGET: ancestor motion
+ON PASS: table target
+
+category: "scheduling"
+purpose: "delay"
+
+# comments can be embedded like this
+
+RRO section ref: "19"
+RROR section ref: "28"
+
+{
+def example_method(self):
+    print 'This is embedded Python code' 
+
+}
+
+-----------------
+\end{verbatim}
+\end{shaded}
+%%\end{figure}
+
+
+
+
+\section{The Robert's-rules parliamentary ruleset specification}
+We have written a partial ruleset specification for the 1915 (now public-domain) Fourth Edition of __Robert's Rules of Order Revised__. The ruleset includes over 25 of the most common motions and their important attributes---such as when they are debatable and what vote is required for them to carry---as well as most of the precedence relations between the motions and some of their semantics. 
+
+This specification was initially based on Henry Prakken's formalization of the Rules (\cite{prakken:formalizing}), which he kindly provided to us in machine-readable form. We made many changes to Prakken's formalization, including the addition of the complicated logic of precedence.
+
+Lessons learned during the formal specification of Robert's rules may be found in the expanded version of this paper.
+
+
+\section{Conclusion}
+The __Parliament__ module provides the central infrastructure for parliamentary-procedure software. A reusable module, it implements and interprets parliamentary rules, tracks meeting state, and infers important information such as which motions are in order at a given time. The module is flexible, accomodating any properly codified set of parliamentary rules. 
+
+A concise specification language allows others to create and modify rulesets efficiently. A usable partial specification of Robert's rules has been created, and a prototype Robert's-rules meeting assistant has been built and used in real face-to-face meetings (\cite{dahlstrom2006}). 
+
+The __Parliament__ module shows potential for use in many contexts, including both face-to-face and online meetings. It is hoped the module will lead to a variety of useful parliamentary software.
+
+
+
+\bibliographystyle{cslipubs-natbib}  
+\bibliography{parliprosoft}
+

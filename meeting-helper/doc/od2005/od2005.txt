@@ -1,0 +1,1237 @@
+%% $Id: od2005.txt,v 1.44 2005/06/01 18:56:27 bshanks Exp $
+\documentclass{acm_proc_article-sp}
+
+%% from http://www.acm.org/sigs/pubs/proceed/template.html
+
+\def\realappendix{\par
+\setcounter{section}{0}
+ \setcounter{subsection}{0}
+ \def\thesection{\Alph{section}} }
+
+
+
+
+\usepackage[usenames]{color}
+\usepackage{framed}
+\usepackage{verbatim}
+%%\usepackage[bookmarks=true, colorlinks=true, linkcolor=blue, citecolor=blue,urlcolor=blue]{hyperref}
+
+\definecolor{shadecolor}{rgb}{0.9,0.9,0.9}
+
+
+%%\dontcentergraphs
+\dontusepackage{graphicx}
+
+\conferenceinfo{Online Deliberation 2005}{Stanford, California USA}
+%%\setpagenumber{50}
+\CopyrightYear{2005} 
+%%\crdata{0-12345-67-8/90/01}  % Allows default copyright data (X-XXXXX-XX-X/XX/XX) 
+\begin{latex}
+
+\title{Parliament: a module for parliamentary procedure software}
+%%\subtitle{[Extended Abstract]}
+
+\numberofauthors{2}
+\author{
+\alignauthor Bayle Shanks\\
+       \affaddr{Computational Neurobiology}\\
+       \affaddr{University of California, San Diego}\\
+       \affaddr{9500 Gilman Dr}\\ 
+       \affaddr{La Jolla, CA 92093}\\
+       \email{bshanks at ucsd.edu}
+\alignauthor Dana Dahlstrom\\
+       \affaddr{University of California, San Diego}\\
+       \affaddr{9500 Gilman Dr}\\ 
+       \affaddr{La Jolla, CA 92093}\\
+       \email{dana at cs.ucsd.edu}
+}
+
+\date{28 April 2005}
+\end{latex}
+
+\usepackage{times}
+
+\maketitle
+
+\begin{abstract}
+Parliamentary procedure is a widely used system of rules for group decision making. We describe a reusable software module, __Parliament__, that implements the logic and bookkeeping of parliamentary procedure, given a precise specification of the rules. Parliament is designed to be embedded in applications, such as to support face-to-face meetings or to facilite computer-mediated online deliberation. As a demonstration and testbed, we have created a partial working specification of Robert's Rules of Order and an application equipped with a graphical user interface for use during face-to-face meetings. 
+\end{abstract}
+
+
+
+%% from http://www.acm.org/class/1998/
+%%\category{J.7}{Computers in other Systems}{}
+%%\category{H.5.3}{Information Interfaces and Presentation}{Group and Organization Interfaces}
+%%\category{H.4}{Information systems applications}{Communications Applications}
+
+
+%% \terms{Design, Human Factors}
+
+
+\keywords{Robert's Rules, Robert's Rules of Order, parlimentary procedure, meeting, meeting systems, meeting management, group decision support systems, GDSS}
+
+
+\section{Introduction}
+
+__Parliament__ is an open-source software module written in Python\footnote{http://python.org/} that can be used to build programs that follow or moderate the conduct of a deliberative assembly using parliamentary procedure. Parliament encapsulates logic and bookkeeping functions necessary for the function of parliamentary procedure, and can be embedded in applications for face-to-face meetings, or for synchronous or asynchronous computer-mediated communication.
+
+Parliament's central functions track meeting state, such as pending motions, the relationships among them, and business already transacted. The outer application is responsible for informing the Parliament module about events as they occur in the meeting, such as "this person made motion X" or "motion Y failed." Parliament answers queries such as "Which motions are presently valid?" or "Which motions have carried in this meeting?" Parliament is also capable of answering questions about hypothetical situations, such as "Which motion will be pending if this one carries?"
+
+The Parliament module does not incorporate the details of parliamentary procedure, such as the motions and customs described in Robert's Rules of Order \cite{robert:rules}. Instead, Parliament requires an external rule specification, allowing the user or developer to modify the rules independently and even to develop whole new rule systems.
+
+\begin{figure}
+\begin{graph}
+  rankdir=LR;
+  size="3,3";
+  node [ shape=box ];
+  subgraph clusterA {
+    label = "application";
+    color = black;
+    "Parliament\nmodule"->"user\ninterface" [style=invis];
+  }
+  "rule\nspecification"->"Parliament\nmodule" [dir=none];
+\end{graph}
+\caption{The Parliament module is embedded in an application, and uses an external rule specification.}
+\label{fig:components}
+\end{figure}
+
+This paper discusses the design and usage of Parliament and of the rule-specification language. It presents data structures for representing the state of parliamentary meetings. The paper describes a simple "Robert's Rules meeting assistant" built using Parliament. It also explains how Parliament could be used to run online meetings and to support decision-making in online communities such as wiki or IRC.
+
+\section{Motivation}
+
+
+A desire for flexibility and reuse motivates modularity and abstraction in our design.
+
+\subsection{A reusable module}
+
+Many conceivable applications could share a common software implementation of parliamentary procedure, such as programs to support face-to-face meetings, whether to assist a parliamentarian, the chair, the secretary, or an individual participant. Similarly, an application could be used outside of meetings to train people in the use and applications of the rules\footnote{Non-modular parliamentary procedure training software called __Robert's Rules in Motion__ is available at http://imovethat.com/}.
+Other examples include:
+
+* **Online, synchronous meetings**
+** A networked application which participants use to request the floor and to make and vote on motions
+* **Online, asynchronous meetings** (could be WWW, IRC, or other)
+** An application to assist a human chair
+** An application to automatically chair a meeting
+** An application to moderate a large discussion board or wiki according to formal meeting rules
+** An application to automatically update a set of organizational bylaws according to the instructions of an online deliberative assembly
+
+
+%% Many of these applications would have dramatically different user interface requirements, and some of them even use their knowledge of parliamentary rules in fundamentally different ways (compare a program which runs actual meetings with a tutor program). 
+
+With so many separate applications, it would be inefficient to reimplement the core logic of parliamentary rules and sets of motions for each application. A reusable module could simplify these implementation efforts, and if several applications were built using the module, these applications could share rule specifications in a common format.
+
+%% Since the Parliament module is independent of any GUI, it can be reused in a wide variety of situations.
+
+\subsection{Modular rule specifications}
+
+Robert's Rules of Order, Newly Revised is the most common choice of rulesets, but there are others, for example, the public domain version of Robert's Rules of Order, and the Standard Code of Parliamentary Procedure. Each branch of the U.S. congress uses its own ruleset which is similar but not identical to Robert's Rules. 
+
+Rather than choosing a specific set of parliamentary rules and "hardcoding" those rules into the module, we opted to create a module flexible enough to accommodate many different parliamentary rulesets. The user or developer specifies the ruleset in a special ruleset specification language, and the specification is loaded into the Parliament module at runtime (see Fig. \ref{fig:components}). There are many advantages to this approach:
+
+
+
+
+# Different deliberative assemblies use different meeting rules. Robert's Rules of Order is the most common ruleset, but there are many variations of Robert's Rules and many other rulesets.
+# Unconventional meeting settings such as the WWW or IRC will probably demand new innovations in parliamentary rules. A flexible module is necessary to adapt to these types of meeting.
+# Allowing the ruleset to be modified gives the assembly complete flexibility to adapt the software to their needs. Assemblies should not be forced to follow a particular set of meeting rules just because their software can't support the rules that they would really prefer.
+# Research on group decision-making support systems (GDSS) is hindered by the difficulty of isolating the effect of individual components of the group decision-making process. A configurable parliamentary ruleset will serve as the ideal platform for testing fine-grained modifications to a group's process.
+
+%% TODO general motivation (see other paper)
+
+
+\section{Design of the module}
+Parliament is object-oriented. Each motion made during a meeting is represented by an object, the type of which is a class that encapsulates relevant characters of that kind of motion. 
+
+In this section we will begin by introducing the data structures used to represent aspects of parliamentary procedure and meeting state. This will allow us to describe the Parliament application programming interface (API). Finally, we will discuss the language used for specifying parliamentary rulesets.
+
+\subsection{Data structures}
+
+
+The major data structures in Parliament can be separated into two groups: states and state transitions.
+
+\begin{figure}
+\begin{center}
+\begin{graph}
+size="3.3,6"
+node [shape=box]
+
+subgraph clusterP {
+label="Parliament module object"
+color=black
+
+subgraph clusterS {
+label="state"
+color=black
+
+subgraph clusterIT {
+label="initiative tree"
+color=black
+node [height=0.02, width=0.02, fontsize=7]
+
+"initiative A" -> "initiative B"
+"initiative A" -> "initiative C"
+"initiative B" -> "initiative D"
+}
+
+space1 [style=invis, width = 1]
+space2 [style=invis, width = 1]
+
+"initiative D"->space2 [style=invis]
+
+}
+
+"transition" -> "action" -> "initiative" -> "motion"
+
+}
+
+\end{graph}
+\end{center}
+\caption{The relationships between the primary types of data structures. All of these data objects are stored within the Parliament object. On the left hand side, the class inheritance diagram shows that "motion" is a subclasses of "initiative", which is a subclasses of "action", which is a subclass of "transition". On the right hand side, we see that objects of class "state" contain initiative trees, which are trees of objects of class "initiative".}\label{classishDiagram}
+\end{figure}
+
+==== States ====
+
+At any given time, Parliament assigns the meeting a certain __state__, which is realized as an object of class "state".
+The history of a meeting is the history of its progression through various states. At the beginning of the meeting, the meeting is in a preset "initial state". States are "Markovian" in that the current state of the meeting contains all of the information about the meeting history which the parliamentary rules might need to know about. Keeping a list of past states allows Parliament to support multiple undo/redo.
+
+==== State transitions: actions, initiatives, motions ====
+
+Any event that causes a change of state is recorded as an object of class __transition__. The class of the transition object indicates which type of event occurred. For example, passing a motion is recorded as a transition of type "motionPassedTransition". After passing a motion, a new state object is created, the "current state" is set to point to the new state, and the new state is appended to the list of past states.
+
+The most common type of transition is an __action__. An action is something which is usually done by a specific participant in the meeting. The class "action" is a subclass of "transition".
+
+The most common type of action is an __initiative__. An initiative is loosely defined as a topic or proposal which affects the legal actions available to meeting participants until the initiative is disposed of. Examples of initiatives are making a motion, beginning a discussion about some topic, or entering a discussion phase such as "brainstorm phase". The class "initiative" is a subclass of the class "action".
+
+One class of initiative is a __motion__, such as the motions in Robert's Rules. Motions are initiatives which can be passed or failed by the assembly. The class "motion" is a subclass of the class "initiative".
+
+==== The initiative tree ====
+
+When an initiative is initiated, a new state object is created and appended to the meeting history list. However, the parliamentary logic will typically need access to some information about which initiatives have come before. Therefore, each state contains a partial history of the meeting, in the form of an __initiative tree__. Eventually, as initiatives are disposed of, they are removed from the initiative tree. 
+
+Figure \ref{classishDiagram} summarizes the relationships between the classes of data objects.
+
+==== Initiatives, motions and the initiative tree: example ====
+
+For example, at the start of a Robert's Rules meeting, the current state is "Initial state". The initiative tree inside the state "initial state" consist only of a single initiative, "root initiative". Fig. \ref{examplet0} shows what the meeting history looks like at this point:
+
+\begin{figure}[h!]
+\begin{tabular}{|l|l|l|}
+**time** & **state** & **initiative tree within state**
+\\ \hline
+\\ t=0 & state 0 & \begin{graph}size="1,1" "root initiative"\end{graph}
+\end{tabular}
+\caption{The history of the meeting after time 0}\label{examplet0}
+\end{figure}
+
+
+Now, let's say Adam makes a motion to walk the dog. A new state is added to the meeting history. Within the new state, Adam's motion appears as a child of the "root initiative" (fig \ref{examplet1}).
+
+\begin{figure}[h!]
+\begin{tabular}{|l|l|l|}
+**time** & **state** & **initiative tree within state**
+\\ \hline
+\\ t=0 & state 0 & \begin{graph}size="1,1" "root initiative"\end{graph}
+\\ \hline
+\\ t=1 & state 1 & \begin{graph}size="1.2,1.2" "walk the dog" [color=green]; "root initiative" -> "walk the dog"\end{graph}
+\end{tabular}
+\caption{The history of the meeting after time 1; green denotes the immediately pending motion}\label{examplet1}
+\end{figure}
+
+Now Beth proposes an amendment to Adam's motion; that Charlie be the one who walks the dog. Figure \ref{examplet2} shows the meeting history at this time.
+
+\begin{figure}
+\begin{tabular}{|l|l|l|}
+**time** & **state** & **initiative tree within state**
+\\ \hline
+\\ t=0 & state 0 & \begin{graph}size="1,1" "root initiative"\end{graph}
+\\ \hline
+\\ t=1 & state 1 & \begin{graph}size="1.2,1.2" "walk the dog" [color=green]; "root initiative" -> "walk the dog"\end{graph}
+\\ \hline
+\\ t=2 & state 2 & \begin{graph}size="1.8,1.8" "walk the dog"; "Charlie must\n walk the dog" [color=green]; "root initiative" -> "walk the dog" -> "Charlie must\n walk the dog" \end{graph}
+\end{tabular}
+\caption{The history of the meeting after time 2}\label{examplet2}
+\end{figure}
+
+Next, debate proceeds, the motions if put to a vote, and the amendment is voted down. A new state is created. At this point, the amendment is no longer pending, and so it is immediately removed from the initiative tree. Figure \ref{examplet32} shows the meeting history after $t = 3$.
+
+\begin{figure}
+\begin{tabular}{|l|l|l|}
+**time** & **state** & **initiative tree within state**
+\\ \hline
+\\ t=0 & state 0 & \begin{graph}size="1," "root initiative"\end{graph}
+\\ \hline
+\\ t=1 & state 1 & \begin{graph}size="1.2,1.2" "walk the dog" [color=green]; "root initiative" -> "walk the dog"\end{graph}
+\\ \hline
+\\ t=2 & state 2 & \begin{graph}size="1.8,1.8" "walk the dog"; "Charlie must\n walk the dog" [color=green]; "root initiative" -> "walk the dog" -> "Charlie must\n walk the dog" \end{graph} 
+\\ \hline
+\\ t=3 & state 4 & \begin{graph}size="1.2,1.2" "walk the dog" [color=green]; "root initiative" -> "walk the dog" \end{graph}
+\end{tabular}
+\caption{The history of the meeting after time 3}\label{examplet32}
+\end{figure}
+
+Note that after t=3, the initiative tree no longer holds any record of the amendment ever taking place; this is because, when using the Parliament system to manage a Robert's Rules meeting, the initiative tree only models those motions currently in progress\footnote{However, there are points in which the application of Robert's Rules depend on whether a motion has been previously debated or not; since Parliament does not model the semantics of principal motions, however, humans must interpret whether a motion is identical to a previous one anyway.}. However, the initiative tree is only part of the meeting state, and other components of the current state object maintain a list of all motion which have passed or failed.
+
+To summarize, when a person makes a motion, this corresponds to a node in the initiative tree. Each state holds an entire initiative tree. And the meeting history holds a list of states. 
+
+
+
+==== Parallelism ====
+\label{parallel}
+Although we have not yet created a "parallelized" parliamentary ruleset, Parliament is designed with this possibility in mind. Robert's Rules is __serial__; at any given time, there is only one immediately pending motion. Enforcing and dealing with seriality is a major design goal of Robert's Rules, as is necessary for the sanity of a large offline meeting; however, one could imagine that in an online meeting, it would be possible for a group to discuss multiple motions at once. In our example, perhaps the amendment "Charlie walks the dog" is debated simultaneously with another amendment, "Debbie walks the dog". In that case, the initiative tree would look like this (with green denoting the immediately pending motions):
+
+\begin{graph}size="2,2" "walk the dog"; "Debbie must\n walk the dog"  [color=green]; "Charlie must\n walk the dog" [color=green]; "root initiative" -> "walk the dog" -> "Charlie must\n walk the dog"; "walk the dog" -> "Debbie must\n walk the dog" \end{graph}   
+
+
+However, while Robert's Rules only allow one immediately pending motion at a time, it is not the case that Robert's Rules do not permit branching trees of initiatives. If Harvey moved a main motion, and then Lisa moved to amend, and then Jacob moved to lay the main motion on the table, then the initiative tree would look like this (with green denoting the immediately pending motion):
+
+\begin{graph}size="1.8,1.8" "lay on the table" [color=green]; "root initiative" -> "main motion" -> "amend"; "main motion" -> "lay on the table"\end{graph} 
+
+
+Note that the structure of the initiative tree reflects the targets of the various motions (in the above example, both "amend" and "lay on the table" target "main motion"). It does not necessarily reflect their chronological order. In Robert's Rules, when motion A passes or fails, then the motion which was immediately pending when motion A was moved becomes the new immediately pending motion. To implement this, we use a linked list; each initiative object remembers which initiative(s) were immediately pending when it was created. In a serial meeting system such as Robert's Rules, this induces a total ordering on the initiative tree (which is the chronological ordering of the initiatives). 
+
+So, in Robert's Rules, there are two different structures that apply to the set of pending initiatives. There is the initiative tree structure, which represents which motions apply to which. There is also the chronological structure, which usually\footnote{\label{stack violation}some motions have additional semantics which alter other items in the stack. For instance, a motion to postpone indefinitely is designed to end consideration of a target motion. If the motion to postpone indefinitely passes, then not only the motion to postpone indefinitely, but also the target motion (call it M), is removed from the stack. In addition, any other motions which targeted M are now no longer relevant and are also removed.} operates as a stack; when a new motion is made, it is pushed onto the top of the stack, and when a motion is disposed of, it is popped from the stack, and the next motion becomes the immediately pending motion. 
+
+In the above example, if Jacob's motion to lay on the table fails\footnote{If Jacob's motion succeeds, then this is like the case in footnote \ref{stack violation}; the main motion is laid on the table, and Lisa's motion to amend is laid on the table along with it}, then Lisa's amendment becomes the immediately pending motion, because it was the motion that was immediately pending when Jacob moved his motion.
+
+BOTH of these structures can affect whether or not a particular motion is legal ("in order") at a particular time. In Robert's Rules, the effects of these two structures can be different depending on the particular motions at issue. This makes answering the question of which motions are in order rather complex.
+
+\begin{figure*}
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline&&&
+\\
+**action** & **initiative** & **motion** & \textbf{(comments)}
+\\ \hline&&&
+\\ valid & valid & in order/admissible &
+\\ \hline&&&
+\\       &  live & pending             &  pending\ldots but not necessarily immediately pending
+\\ \hline&&&
+\\       &  open & immediately pending &
+\\ \hline&&&
+\\     target  &  target & target & some actions don't have any target
+\\ \hline&&&
+\\       & applicable to  & applicable to & A is eligible to be B's parent in the initiative tree
+\\ \hline&&&
+\\       & ancestor  &  ancestor & an ancestor is always live 
+\\ \hline
+\end{tabular}
+\end{center}
+\caption{Some terminology on initiatives. Each row represents one term. The first three columns indicate how the term may be expressed when the initiative in question is of the subclass given by the column label. The last column gives comments on the term.}\label{termTable}
+\end{figure*}
+
+==== The status of actions and initiatives: valid, live, open ====
+Figure \ref{termTable} summarizes the following terminology.
+
+In the context of a particular meeting state, a parlimentary ruleset may permit some actions and prohibit others. When the parliamentary ruleset permits an action, we say that that action is __valid__. If the action is a motion, then saying that the motion is __in order__ or __admissable__ is equivalent to calling it valid.
+
+An initiative is said to be __live__ whenever it still resides in the initiative tree. Note that initiatives which are no longer in the initiative tree may still be recorded in the meeting history, and hence may still influence current state in some way. If an initiative is a motion, then saying it is __pending__ is equivalent to calling it live.
+
+Some subset of the live initiatives are __open__. The semantics of __open__ may depend on the ruleset, but in general it implies that an initiative may be directly acted upon in the context of the current state. If an initiative is a motion, then saying it is __immediately pending__ is equivalent to calling it open.
+
+
+
+==== Relations between different actions and initiatives: \\target, applicable, ancestor ====
+
+Often an action is performed with respect to a __target__. We say that an action __targets__ its target. Some actions may not have any target. 
+
+When an initiative is made a child of another initiative in the initiative tree, we say that the child initiative has been __applied__ to the parent initiative. In the context of a meeting state, the ruleset may specify that some initiatives may or may not be applied to some other initiatives. If it is permitted for initiative C to be made a child of initiative P, we say that C is __applicable to__ P. 
+
+If, in the initiative tree, the vertex corresponding to initiative A is an ancestor of the vertex corresponding to initiative B, then we say that A is an ancestor of B. Note that since all of the initiatives in the tree are live, therefore an initiative's ancestors must all be live.
+
+
+
+
+
+
+
+
+%% targets vs. in order
+
+\subsection{The Parliament module API}
+The functions of the Parliament module are to keep track of meeting state and to interpret the parliamentary ruleset in the context of the current state.
+ 
+Meeting state includes data such as which motions are currently pending, the relationships between these motions, which motions are valid at the present time, and which motions have passed or failed earlier in the meeting. The Parliament API provides functions to manipulate and query meeting state. 
+
+The program using the module is responsible for determining what is happening in the meeting and calling the API to record meeting events as they occur. For example, if someone makes a motion, the caller calls Parliament's \verb|apply| function to apply the new motion to the state. If a motion passes, the caller calls Parliament's \verb|motionPassed| to record the change in state.
+
+A history of previous meeting states is kept in memory so that Parliament can provide multiple undo/redo functionality. 
+
+Here is a list of the methods available in the Parliament API. 
+
+
+
+
+
+**Initialization methods**
+
+\begin{description}
+\item{\begin{latex}\verb|__init__(compiledRuleFilepath)|\end{latex}}
+
+
+The constructor of the Parliament object. Takes a filepath to a file containing the compiled ruleset. This instance of Parliament will be bound to that ruleset.
+
+\item{\verb|initState(args \= None)|}
+
+Reset meeting state to the initial state. Takes a variable \verb|args| which is passed to the ruleset's initial state.
+
+\end{description}
+
+**Methods to get information about the ruleset which do not depend on the current state**
+
+\begin{description}
+
+\item{\verb|getInitialState(args \= None)|}
+
+Returns a new initial state object, without actually changing the current meeting state. Useful if the caller wishes to inspect or operate on an inital meeting state object without resetting the real meeting state.
+
+
+
+\item{\verb|nonAbstractActInternalNames()|}
+
+Returns a list of the internal names of all actions which exist in the current ruleset except for abstract actions (an "abstract" action is one which is supposed to be hidden from the user; often, these are actions which are used as superclasses but never themselves instantiated). 
+
+\item{\verb|getTransitionClass(internalNameOfTransition)|}
+
+Get a class object for the specified transition type. 
+
+
+\item{\verb|isAction(object)|}
+
+Taken an object. Returns a boolean indicating whether that object is an instance of type Action (or an instance of a subclass of Action). 
+
+
+\end{description}
+
+
+
+**Methods to get information about the current state**
+\begin{description}
+\item{\verb|getCurrentState()|}
+
+Returns the state object representing the current meeting state.
+
+\item{\verb|validActs(state)|}
+
+Returns a list of all actions which are valid from meeting state \verb|state|.
+
+\item{\verb|currentValidActs()|}
+
+Returns a list of all actions which are valid in the current meeting state.
+
+
+\item{\verb|getOpenInitiatives()|}
+
+Returns the current list of open initiatives. In Robert's Rules, this is a list of length one containing the immediately pending motion.
+
+\item{\verb|getTransition(internalNameOfTransition)|}
+
+Returns an instantiation of the specified transition type. The transition is instantiated as if it began in the current state (remember that state transition constructors take the current state as an argument; so, what is returned by this method may depend on what the current state is).
+
+%% todo: talk about state transition constructors 
+
+ 
+
+\item{\verb|getTransitionName(internalNameOfTransition)|}
+
+Returns the name attribute of the specified transition. The transition is temporarily instantiated as if it began in the current state.
+ 
+\item{\verb|getInitiativeTreeRoot()|}
+
+Returns the root vertex of the initiative tree of the current state.
+
+\item{\verb|getInitiativeTree()|}
+
+Returns the initiative tree of the current state.
+
+\item{\verb|getValidTargets(initiative)|}
+
+Takes either an initiative object or the internal name of an initiative type.
+
+Returns a list of other initiatives which would be valid targets of the specified initiative if the specified initiative were initiated in the current state. The first element of this list is the default target. If there are no valid targets, the empty list is returned.
+
+\item{\verb|getDefaultTarget(initiative)|}
+
+Takes either an initiative object or the internal name of an initiative type.
+
+Returns the default target of the specified initiative if the specified initiative were initiated in the current state.
+
+\item{\verb|getMeetingEventHistory()|}
+
+Returns the history of initiatives which have been initiated in this meeting. Returns a list of initiatives, ordered by the times at which the initiatives were made.
+
+
+\end{description}
+
+
+**Methods to modify the current state**
+
+\begin{description}
+
+\item{\verb|appendNewState(newState, newInitiativeAdded)|}
+
+Append \verb|newState| to the state history, and make it the current state. \verb|newInitiativeAdded| is boolean and should be \verb|True| if there was a new initiative added in this state transition.
+
+\item{\verb|apply(initiativeInternalName,|\\\verb|position, args \= None)|}
+
+Instantiate an initiative of the specified type, and apply it to the current state. \verb|position| is the vertex of the initiative tree which will be the parent of the new initiative. \verb|args| will be passed to the initiative's constructor.
+
+\item{\verb|reparent(initiative, newParentInitiative)|}
+
+Relocates the position of \verb|initiative| within the initiative tree so that its parent initiative becomes \verb|newParentInitiative|.
+
+
+
+\item{\verb|motionFailed()|}
+
+Fail the immediately pending motion, and add the appropriate new state and state transition to the state history. 
+
+\item{\verb|motionPassed()|}
+
+Pass the immediately pending motion, and add the appropriate new state and state transition to the state history. 
+
+\end{description}
+
+**Methods involving undo/redo**
+
+\begin{description}
+
+\item{\verb|canGoBack()|}
+
+Returns True if it's possible to go farther back in the undo history.
+
+\item{\verb|goBack()|}
+
+Undo the previous state transition.
+
+\item{\verb|canGoFwd()|}
+
+Returns True if it's possible to go farther forwards in the undo history.
+
+\item{\verb|goFwd()|}
+
+Go forwards in the undo history (redo).
+\end{description}
+
+
+\subsection{The ruleset specification language}
+
+
+The rule specification language has a quasi-English syntax in the same manner as SQL. A ruleset is typically written in a separate textfile and then loaded into the Parliament module upon initialization. The design goals for the rule specification language are:
+
+# The language should be as readable as possible by parliamentarians.
+# Someone with only a little bit of programming experience should be able to understand the language well enough to write or to edit a rule specification.
+# Robert's Rules should be able to be specified concisely in the language.
+# Recognizing that there will always be things that people want to do with the ruleset that the language does not support, the language should allow complex programming code to be embedded in a specification.
+
+The rule specification language is object-oriented. Different types of actions, initiatives, and motions can be defined, and each type of object has a collection of attribute-value pairs. Each type of object derives from a "superclass", from which it inherits default attribute values. This allows a compact description of motions; for example, the Robert's Rules \verb|Motion to make a general order| is a special case of the superclass \verb|Principal Motion|, allowing it to inherit the attribute value \verb|True| for the attribute \verb|debatable|. 
+
+The determination of attribute values can also be computed dynamically at runtime by evaluating expressions. For instance, the value of the \verb|debatable| attribute of the \verb|reconsider| motion is given by the expression \verb|ONLY WHEN PARENT IS debatable|.
+
+The Parliament module uses the ruleset by compiling the object types specified in the ruleset file into Python code. A special compiler was developed for this purpose. Then, the resulting Python code is used as a library by the Parliament module. The object definitions in the ruleset files are compiled into actual Python objects of types \verb|transition|, \verb|action|, \verb|initiative|, \verb|motion|, and \verb|state|.
+
+The ruleset specification can be arbitrarily expressive; if there is no other way to express some desired behavior, arbitrary Python code can be embedded into any object.
+
+==== Examples of the rule specification language ====
+
+Here's how the Robert's Rules motion "Lay on the table" is defined (the actual definition has a longer summary and is not word-wrapped):
+
+
+%%\begin{figure}
+\begin{shaded}
+\begin{verbatim}
+-----------------
+NAME: Lay on the table 
+MOTION TO FORM OF NAME: "Motion to lay 
+on the table"
+
+TYPE: Subsidiary motion
+
+SUMMARY: "The objective of this motion is to 
+temporarily lay a question aside"
+
+motion precedence: 1
+debatable: NO
+amendable: NO
+subsidiaries allowed: NO
+reconsiderable: ONLY WHEN (WAS_ACCEPTED)
+
+TARGET: ancestor motion
+ON PASS: table target
+
+category: "scheduling"
+purpose: "delay"
+
+# comments can be embedded like this
+
+RRO section ref: "19"
+RROR section ref: "28"
+
+{
+def example_method(self):
+    print 'This is embedded Python code' 
+
+}
+
+-----------------
+\end{verbatim}
+\end{shaded}
+%%\end{figure}
+
+
+The compiled Python class definition may be found in Appendix A. Remember that this entire block will be turned into a single Python class. 
+
+Let's step through the specification of this motion and explain it. 
+
+\begin{shaded}
+\begin{verbatim}
+-----------------
+\end{verbatim}
+\end{shaded}
+
+The dashes are a signal to the compiler that this is the beginning of a new object type (which corresponds to a Python class). 
+
+\begin{shaded}
+\begin{verbatim}
+NAME: Lay on the table 
+\end{verbatim}
+\end{shaded}
+
+The NAME line is the first example of an "attribute" of this object type. An "attribute" has an attribute name (in this case, NAME), and a value. The value may or may not change depending on the context of the current meeting state. Attributes will be usually be compiled into instance methods of the Python object, but will sometimes be represented as an actual Python attribute of the class (when the attribute is known to be a constant).
+
+Generally the case of the attributes does not matter; in compilation, all attribute names are converted to lowercase. As a convention, we like to use uppercase attribute names to mark attributes which are __standard__, and lowercase attribute names for attributes which are arbitrary and specific to this ruleset. 
+
+Some attribute names are  __standard__. Standard attributes have a defined semantics that is the same for any ruleset. Some standard attributes are also treated in a special way by the compiler. But any alphanumeric name with spaces can be used as an attribute. Non-standard attributes can be used any way that the ruleset author wishes. However, the user interface should not use any non-standard attributes if it wishes to remain compatible with all rulesets. See Section \ref{stdAttrTable} in Appendix \ref{sec:rulespec} for a list of standard attributes.
+
+NAME is a standard attribute, and gets special treatment by the compiler. First, although its value is a string, no quotes are needed around its value (in general, quotes are required around string-typed attribute values). Second, NAME has a special meaning. NAME is required for every object, and Parliament UIs expect it to be a string suitable for display to the user which identifies this object type. 
+
+NAME also has a third function. If no value for attribute "INTERNAL NAME" is specified, then the value of NAME is copied to INTERNAL NAME. INTERNAL NAME is used to generate the name of the Python class, and other parts of the ruleset specification can refer to this function by its INTERNAL NAME. INTERNAL NAME is not expected to be suitable for display to the user. 
+
+Usually the ruleset will only explicitly specify NAME, and will let INTERNAL NAME be automatic. But if the ruleset author wants NAME and INTERNAL NAME to be different, they are free to specify an INTERNAL NAME, too. This is desirable when you want to implement a single action type using two different internal classes, only one of which is valid at any one time. In this way the user will be shown only the NAME string, and will see the two different classes as one type of action. In our Robert's Rules implementation, we used this trick to deal with motions which can be different types depending on meeting context. For example, the Motion to Recess can be either Principal or Privileged depending on context. Internally, we created two motions, a Principal one and a Privileged one, with two distinct INTERNAL NAMEs; but the NAME of both motions was set to "Recess".
+
+\begin{shaded}
+\begin{verbatim}
+MOTION TO FORM OF NAME: "Motion to lay 
+on the table"
+
+TYPE: Subsidiary motion
+\end{verbatim}
+\end{shaded}
+
+In contrast to NAME and TYPE, MOTION TO FORM OF NAME is just a run-of-the-mill attribute, and does not have any standard predefined semantics. Therefore, since in this case its value is a string, the string must be enclosed in quotation marks\footnote{We have wordwrapped this line for presentation purposes; parsing is mostly line-by-line and hence it wouldn't really work this way; the whole string is on one line in the actual file}.
+
+"TYPE" indicates which class is the superclass of this class. In this case, it is class "Subsidiary motion". Since "Subsidiary motion" is a subclass of "motion", "Lay on the table" is also a subclass of "motion".
+
+
+\begin{shaded}
+\begin{verbatim}
+SUMMARY: "The objective of this motion is to 
+temporarily lay a question aside"
+
+motion precedence: 1
+debatable: NO
+amendable: NO
+subsidiaries allowed: NO
+\end{verbatim}
+\end{shaded}
+
+"SUMMARY" is a standard attribute that every ruleset should support. It contains a medium-length textual summary that may be displayed to the user to explain the action.
+
+"motion precedence" shows an example of an attribute with a numerical value.
+
+"debatable", "amendable", and "subsidiaries allowed" show examples of attributes with a boolean value (NO is compiled into Python's \verb|False|, YES becomes Python's \verb|True|).
+
+
+\begin{shaded}
+\begin{verbatim}
+reconsiderable: ONLY WHEN (WAS_ACCEPTED)
+\end{verbatim}
+\end{shaded}
+
+Here is our first example of a non-static attribute value. The value of the reconsiderable attribute of motion type "Lay on the table" will be the result of evaluating this expression at runtime. There are a number of keywords that may be used to build expressions, such as AND, OR, NOT, IF, and EXCEPT. ONLY WHEN is a synonym for IF, and either of these simply return the value of their argument (their only use is for easier reading). So, in this case, the value returned for the attribute \verb|reconsiderable| will be the return value of the method \begin{latex}\verb|was_accepted|\end{latex} of the current \verb|state| object. See Table \ref{attrExprTable} in Appendix \ref{sec:rulespec} for details about the syntax of expressions.
+
+\begin{shaded}
+\begin{verbatim}
+TARGET: ancestor motion
+\end{verbatim}
+\end{shaded}
+
+This line sets a condition on the type of objects which this motion is allowed to target\footnote{Actually, in our current implementation, the "TARGET: ancestor" condition has no effect; in the case of "Lay on the table", an equivalent condition is already enforced in the superclass "Subsidiary motion".}. In this case, the motion "Lay on the table" can target another motion M if M is an ancestor motion (that is, M is an ancestor of "Lay on the table" in the initiative tree). See Table \ref{TARGETTable} in Appendix \ref{sec:rulespec} for other available values for a TARGET attribute.
+
+\begin{shaded}
+\begin{verbatim}
+ON PASS: table target
+\end{verbatim}
+\end{shaded}
+
+This line tells Parliament what to do when a motion of type "Lay on the table" passes. In this case, \verb|table target| is a command to lay the target of this motion on the table. See Table \ref{passFailTable} in Appendix \ref{sec:rulespec} for other available actions.
+
+\begin{shaded}
+\begin{verbatim}
+category: "scheduling"
+purpose: "delay"
+\end{verbatim}
+\end{shaded}
+
+"category" and "purpose" are not standard attributes. In this case, the ruleset is using them to categorize the motions in two different ways. The UI could choose to use these attributes be used to inform the user or to help sort available motions.
+
+\begin{shaded}
+\begin{verbatim}
+# comments can be embedded like this
+\end{verbatim}
+\end{shaded}
+
+A # sign at the beginning of a line makes that line a comment.
+
+\begin{shaded}
+\begin{verbatim}
+RRO section ref: "19"
+RROR section ref: "28"
+\end{verbatim}
+\end{shaded}
+These are two more non-standard attributes. In this case, the ruleset is using them to note where to find more information about this motion in two different official Robert's Rules editions.
+
+
+\begin{shaded}
+\begin{verbatim}
+{
+def example_method(self):
+    print 'This is embedded Python code' 
+
+}
+\end{verbatim}
+\end{shaded}
+
+Whatever is between curly braces is inserted directly into the compiled Python class.
+
+
+\begin{shaded}
+\begin{verbatim}
+-----------------
+\end{verbatim}
+\end{shaded}
+
+The dashes at the end delimit the end of the block for the "Lay on the table" object type.
+
+
+
+\section{The Robert's Rules parliamentary ruleset specification}
+We have written a partial ruleset specification for the public domain version of Robert's Rules. The ruleset includes over 25 of the most common motions, the important attributes of those motions (such as when they are debatable, what vote is required for them to carry), most of the precedence relations between them, and some of their semantics. 
+
+This specification was initially based on Henry Prakken's formalization of the Rules \cite{prakken:formalizing}, which he kindly provided to us in machine-readable form. We made many changes to Prakken's formalization, including the addition of the complicated logic of precedence.
+
+We discovered that Robert's Rules are more complex than we had expected, even though one of us [DD] has had extensive experience in actual meetings using Robert's Rules. It is not just that the Rules are described in a verbose fashion in the Robert's Rules books; rather, the logic of the rules is fundamentally complex. Much of this complexity is from context-dependent special cases. This complexity is an additional argument in favor of the need for a formal specification of the Rules such as we are providing.
+
+One unexpected complexity which surprised the author who has not had much experience in Robert's Rules meetings [BS] is the relations between the concepts of __the tree of pending motions__, __precedence__ and the __target__ of a motion. Initially, this author thought that
+
+a) A new motion can only be applied to the immediately pending motion (that is, the initiative tree never branches).
+b) Whether a motion is in order can be computed by only looking at the new motion and the immediately pending motion. 
+
+Neither of these are true in Robert's Rules. Section \ref{parallel} gives an counterexample to (a). A counterexample of (b) is seen in Figure \ref{currentlyPendingMotionIsNotEnough}. 
+
+Another confusing point is the distinction between the __target__ of a motion, and the __motion to which that motion is applied__ (the parent in the initiative tree). Usually, these two notions cohere in Robert's Rules. However, there are a few special cases (such as the motion to reconsider) in which it is possible to have a target which is not even a pending motion.
+
+Future researchers would do well to avoid these pitfalls.
+
+
+\begin{figure}
+
+\textsf{{\small If a Main Motion is made, followed by a motion to Amend, then Lay on the Table is in order, because Amend yields to Lay on the Table, and Main Motion yields to Lay on the Table, and Lay on the Table may be applied to Main Motion:}}
+
+\begin{graph}
+size="1,1"
+"Main Motion" -> "Amend"
+"Amend" [color=green]
+\end{graph}{\Large $\qquad \rightarrow \qquad$}\begin{graph}
+size="1.5,1.5"
+"Main Motion" -> "Amend"
+"Main Motion" -> "Lay on the Table"
+"Lay on the Table" [color=green]
+\end{graph}
+
+
+
+\textsf{{\small But if a Main Motion is made, followed by a motion to Recess, followed by a motion to Amend, then Lay on the Table is **not** in order, because although Amend yields to Lay on the Table, Recess does not, and so there are no eligible targets for Lay on the Table:}}
+
+\begin{graph}
+size="1.2,1.5"
+node [fontsize=30]
+"Main Motion"
+"Recess" -> "Amend"
+"Amend" [color=green]
+\end{graph}{\Large$\quad \nrightarrow \quad$}\begin{graph}
+size="1.4,1.5"
+node [fontsize=30]
+"Main Motion" -> "Lay on the Table"
+"Recess" -> "Amend"
+"Lay on the Table" [color=green]
+\end{graph}
+
+
+
+\caption{Knowledge of the immediately pending motion is not sufficient information to decide which motions are in order}\label{currentlyPendingMotionIsNotEnough}
+\end{figure}
+
+\begin{figure*}[t]
+\includegraphics[scale=.49]{shot1.eps}
+\caption{The Robert's Rules meeting assistant. The list of __motions currently in order__ is on the left. The __back__ and __forward__ buttons are above, and the __pass__ and __fail__ buttons below along with the __ignore rules__ checkbox. The tree of __currently pending motions__ is in the upper-right corner; below it are the motion-detail fields: __mover__, __target__, and __text__. The event log is in the bottom-right corner.}
+\label{screenshot1}
+\end{figure*}
+
+
+
+
+\section{An application: Meeting assistant}
+
+The prototype __meeting assistant__ application uses the Parliament module, and is designed to operate in a face-to-face meeting conducted according to Robert's Rules of Order. The user provides input about events in the meeting, such as motions and votes. The meeting assistant tracks the meeting state and displays useful information such as currently pending motions, motions currently in order, and transacted business. More discussion on the motivations and usage of such an application can be found in \cite{dahlstrom2005}.
+
+==== The Primary User Interface ====
+
+Figure \ref{screenshot1} depicts the meeting assistant's graphical user interface. Its features are designed especially for use by an organization's secretary, who is responsible for producing the minutes. The information captured by the meeting assistant is very close to exactly that required for this task.
+
+The interface provides a list of __motions currently in order__. Which motions appear in the list depends on the meeting state---primarily, which motions are currently pending. The user may activate any of motions in the list to indicate it has been moved in the meeting. __Pass__ and __fail__ buttons allow the user to indicate the fate of the immediately pending motion. __Back__ and __forward__ buttons navigate through meeting history, providing a multiple undo/redo mechanism critical for usability.
+
+A tree diagram displays the __currently pending motions__ and how they are related. The immediately pending motion is always at the bottom of the diagram. Displayed and editable in several fields are the details of a motion, including who its __mover__ is, what its __target__ is, and its __text__ or other related notes.
+
+The interface also provides an event log with a record of each motion in the order it was moved, and whether it passed or failed.
+
+Real-world assemblies sometimes deviate from the rules, either by means of a motion to suspend the rules or by sheer mistake. In either case, to be useful, the software must continue to track the state of the meeting. Hence the interface provides an __ignore rules__ checkbox that allows the user to record actions and motions despite these being out of order according to the module's interpretation of the rules.
+
+==== The "view only" window ====
+Figure \ref{viewOnlyWindow} shows a window which displays the most relevant information about the current meeting state in an uncluttered easy-to-read format. 
+
+
+%% TODOTODO
+%% lotsa screenshots
+
+
+\section{Future work}
+There are many possibilities for using and for improving the Parliament module.
+
+\subsection{Improve Parliament}
+* Ideally, a ruleset specification should not have to contain much embedded Python code. By making the ruleset language more expressive, we can eliminate most of the embedded code which is currently in the Robert's Rules specification. 
+* Currently, there are only a few motions whose semantics are modeled by Parliament (that is, motions which __do something special__ when they pass (see Table \ref{passFailTable} in Appendix \ref{sec:rulespec}). More motion semantics should be implemented until most of Robert's Rules' motions are covered.
+* Parliament should track scheduling and agenda management.
+* Parliament should track floor control, speaker's lists, and limits on debate.
+* Parliament should track voting, membership and attendance.
+* Parliament works, but it is not at a mature stage of development. The source code must be cleaned up and commented, and a battery of unit tests must be written.
+
+
+\subsection{Improve the Robert's Rules specification}
+While we have covered enough of the basics of Robert's Rules to be useful---indeed, Parliament already obeys the Rules to an extent greater than most assemblies that might use it---the Rules contain many special exceptions which we have not yet modeled. 
+
+\subsection{Improve the meeting assistant}
+The meeting assistant should:
+* Be documented, and made easy to install.
+* Generate various reports after the meeting, including standard meeting minutes, an event log, and a list of main motions which carried during the meeting.
+* Allow the user to see various addition attributes of the motions, such as whether a motion is debatable or reconsiderable.
+* Have an interface to an English copy of the official Rules, and should allow users to jump to the location where a given motion is discussed.
+
+\subsection{Make more ruleset specifications}
+We plan to utilize the modular nature of Parliament to experiment with many different types of rulesets, including:
+* The __Standard Code of Parliamentary Procedure__, a simplified competitor to Robert's Rules. 
+* A parallelized version of the rules, suitable for asynchronous online assemblies.
+* Simplified rulesets for beginners.
+
+\subsection{Make more applications}
+The meeting assistant is only one of many possible parliamentary applications which Parliament could be used in. Other intriguing applications include:
+
+* A web-based application which automatically chairs an online, asynchronous meeting.
+* An IRC-based automatic meeting chair for synchronous parliamentary meetings on IRC.
+* A wiki-based automatic meeting chair to help online communities asynchronously make important decisions.
+ 
+
+\section{Related Work}
+
+Other researchers have investigated implementing Robert's Rules of Order in software, and adapting the rules for use in the context of computer-mediated communication. Zhang \textit{et al.} designed a client-server architecture for collaboration mitigated by what they call ``extended RRO'' \cite{zhang:rule-mitigated}. Horan and Benington describe a protocol for conducting electronic deliberations by e-mail in academic committees that use Robert's Rules \cite{horan:protocol}. They assume that users will implement the protocol, but software could automate some of what they recommend. Davies \textit{et al.} have built an online deliberation environment, __Deme__ \cite{davies:online}, primarily to supplement the activities of groups that already meet face-to-face.
+
+
+
+\section{Conclusion}
+The Parliament module solves a major portion of the task of developing parliamentary procedure software. A reusable module was created which implements and interprets parliamentary rules, which tracks meeting state, and which infers important information such as which motions are in order at a given time. The module is flexible and could be used with almost any set of parliamentary rules. 
+
+A concise specification language was created to allow others to efficiently create and modify rulesets. A partial, yet usable specification of Robert's Rules was created with over 25 motions. The module was combined with the Robert's Rules specification and used to build a complete Robert's Rules meeting assistant. The meeting assistant was used in a real face-to-face meeting\cite{dahlstrom2005}. 
+The Parliament module shows great potential for use in many contexts, including both face-to-face and online meetings. The module will hopefully lead to the creation of a variety of useful parliamentary software.
+
+
+
+\bibliographystyle{abbrv}
+\bibliography{../parliprosoft.bib}
+
+
+
+
+\realappendix
+\begin{figure*}
+\section*{APPENDIX}
+\section{Compiled class definition of motion "Lay on the table"}
+
+\begin{shaded}\begin{verbatim}
+
+class lay_on_the_table(subsidiary_motion):
+    name = 'Lay on the table'
+
+    internal_name = 'lay_on_the_table'
+
+    def motion_to_form_of_name(self, state):
+        try:
+            return r'Motion to lay on the table'
+
+        except AttributeError:
+            return None
+
+    def type(self, state):
+        try:
+            return r'subsidiary_motion'
+
+        except AttributeError:
+            return None
+
+    def summary(self, state):
+        try:
+            return r'The objective of this motion is to temporarily lay a question aside.'
+                                 
+
+        except AttributeError:
+            return None
+
+    def motion_precedence(self, state):
+        try:
+            return 1
+
+        except AttributeError:
+            return None
+    def debatable(self, state):
+        try:
+            return False
+
+        except AttributeError:
+            return None
+    def amendable(self, state):
+        try:
+            return False
+
+        except AttributeError:
+            return None
+    def subsidiaries_allowed(self, state, transition):
+        try:
+            return False
+
+        except AttributeError:
+            return None
+    def reconsiderable(self, state, transition):
+        try:
+            return (state.was_accepted(self))
+        except AttributeError:
+            return None
+\end{verbatim}
+\end{shaded}
+\end{figure*}
+\begin{figure*}
+\begin{shaded}
+\begin{verbatim}
+    def getTargetType(self):
+        return 'ancestor motion'
+
+    def getPotentialTargets(self):
+        result = []
+        cur = self.prevMotion()
+        while cur:
+            result = result.append(cur)
+            cur = cur.prevMotion()
+            
+        return result
+    
+    
+    def motionPassed(self, state):
+        newState = subsidiary_motion.motionPassed(self,state)
+        
+        if self.target:
+             (newState, subtree) = self.target.assignResultAndDetach(
+                   newState, 'table', transition = None, 
+                   descendentLabel = 'table')
+             newState.subtreeTables['table'].append(subtree)
+        
+    
+
+        return newState
+    
+    def category(self, state):
+        try:
+            return r'scheduling'
+
+        except AttributeError:
+            return None
+    def purpose(self, state):
+        try:
+            return r'delay'
+
+        except AttributeError:
+            return None
+
+    # comments can be embedded like this
+
+    def rro_section_ref(self, state):
+        try:
+            return r'19'
+
+        except AttributeError:
+            return None
+    def rror_section_ref(self, state):
+        try:
+            return r'28'
+
+        except AttributeError:
+            return None
+
+    def example_method(self):
+        print 'This is embedded Python code' 
+
+\end{verbatim}
+\end{shaded}
+\end{figure*}
+
+
+
+
+
+\newpage
+
+
+
+
+
+\begin{figure*}
+\section{Rule specification language reference}\label{sec:rulespec}
+\subsection{Table of standard attributes}\label{stdAttrTable}
+The NAME and TYPE attributes are required; all others are optional. All attribute names must be composed only of alphanumeric ASCII characters and spaces. Although some of the examples below run over multiple lines in order to fit them into the table, in reality, each attribute definition must be on a single line. The phrases "object type" and "object class" mean the same thing, although TYPE is the attribute name used to specify the superclass of an object.
+
+\begin{tabular}{|l||l|l|l|}
+\hline &&&
+\\ **Attribute name** & **Meaning** & **Special syntax**  & **Example** 
+\\\hline &&&
+\\ NAME & printable name of object type & no quotes needed & \verb|NAME: Lay on the table|
+\\\hline &&&
+\\ INTERNAL NAME & the name used to refer to object type & no quotes needed;  & \verb|INTERNAL NAME: Lay on the table|
+\\ & elsewhere in the rule specification & &
+\\ && if not specified, & 
+\\ && NAME is used & 
+\\\hline &&&
+\\ TYPE & superclass of this object type & no quotes needed; & \verb|TYPE: motion (ABSTRACT)|
+\\ &&&
+\\ && if followed by & 
+\\ && \verb|(ABSTRACT)| then this &
+\\ && object type is marked & 
+\\ && as ABSTRACT and will &
+\\ && be invisible to the user &
+\\\hline &&&
+\\ SUMMARY & a mid-length printable description & &  \verb|SUMMARY: "The objective of|  
+\\ & of the object type & & \verb|this motion is to temporarily| 
+\\ &&& \verb|lay a question aside"|
+\\\hline &&&
+\\ TARGET & currently unused & see Table \ref{TARGETTable} & \verb|TARGET: ancestor motion|
+\\ & (will be used to specify &&
+\\ &   which actions are &&
+\\ &   allowable targets of &&
+\\ &   the object type) &&
+\\\hline &&&
+\\ ON PASS & action to be taken if  & see Table \ref{passFailTable} & \verb|ON PASS: table target|
+\\ & this motion passes &&
+\\\hline &&&
+\\ ON FAIL & action to be taken if  & see Table \ref{passFailTable} & \verb|ON FAIL: table target|
+\\ & this motion fails &&
+\\\hline &&&
+\\ MOTION PRECEDENCE & a number used to compute & & \verb|MOTION PRECEDENCE: 3| 
+\\   & motion precedence; lower &&
+\\   & numbers take precedence &&
+\\\hline &&&
+\\ DECISION MODE & What determines whether & see Table \ref{DECISIONMODETable} & \begin{latex}\verb|DECISION MODE: "vote"|\end{latex}
+\\ & this motion passes or fails? &&
+\\\hline &&&
+\\ REQUIRES TARGET & Does this motion require & & \verb|REQUIRES TARGET: YES|
+\\ & potential targets to be &&
+\\ & available in order to be valid? &&
+\\ & Value should be "yes" or "no". && 
+\\\hline &&&
+\\ APPLIES ONLY TO TYPE & If this attribute is given, & & \verb|APPLIES ONLY TO TYPE:| 
+\\ &then this initiative is only && \begin{latex}\verb|"Principal motion"|\end{latex}
+\\ & applicable to initiatives &&
+\\ & of the specified type &&
+\\\hline &&&
+\\ REQUIRED MAJORITY & What proportion of the &  & \verb|REQUIRED MAJORITY: 2/3|
+\\ & assembly must agree in order  &&
+\\ & pass this motion &&
+\\\hline
+\end{tabular}
+\end{figure*}
+
+
+\begin{figure*}
+\subsection{Table of standard values of TARGET attribute}\label{TARGETTable}
+The semantics of the TARGET attribute have not been completely implemented.
+
+\begin{tabular}{|l|l|}
+\hline&
+\\**Value** & **Meaning**
+\\\hline&
+\\ \verb|ancestor motion| & Only ancestor motions are eligible targets
+\\\hline&
+\\ \verb|pending motion| & Only pending motions are eligible targets
+\\\hline
+\end{tabular}
+\end{figure*}
+
+\begin{figure*}
+\subsection{Table of standard values of ON PASS and ON FAIL attributes}\label{passFailTable}
+\begin{tabular}{|l|l|}
+\hline&
+\\**Value** & **Meaning**
+\\\hline&
+\\ \verb|withdraw target| & Withdraw the target motion
+\\\hline&
+\\ \verb|table target| & Table the target motion
+\\\hline
+\end{tabular}
+\end{figure*}
+
+\begin{figure*}
+\subsection{Table of standard values of DECISION MODE attribute}\label{DECISIONMODETable}
+\begin{tabular}{|l|l|}
+\hline&
+\\**Value** & **Meaning**
+\\\hline&
+\\ \verb|YES| & The motion automatically passes as soon as it is made
+\\\hline&
+\\ \begin{latex}\verb|"vote"|\end{latex} & The motion goes to a vote
+\\\hline
+\end{tabular}
+\end{figure*}
+
+\begin{figure*}
+\subsection{Table of syntax used in attribute value expressions}\label{attrExprTable}
+\begin{tabular}{|l|l|l|}
+\hline&&
+\\**Syntactical element** & **Meaning** & **Example**
+\\ or **Keyword** &&
+\\\hline&&
+
+\\ "(\ldots)" & Used for grouping   & \verb|subsidiaries allowed:|
+\\ && \verb|  ONLY WHEN (this motion|
+\\ && \verb|    is debatable)|
+\\ && \verb|  AND (motion is "Lay on|
+\\ && \verb|    the table")|
+\\\hline&&
+
+\\ "$<$string$>$" & Depending on context, either evaluates to $<$string$>$   & \begin{latex} \verb|inventor: "robert"| \end{latex}
+\\ & or evaluates to whatever the method & 
+\\ & \verb|state.askUser(<string>)| returns &
+\\\hline&&
+
+
+\\ YES & The truth value "True" & \verb|debatable: YES|
+\\\hline&&
+
+
+
+\\ NO & The truth value "False" & \verb|debatable: NO|
+\\\hline&&
+
+
+
+
+\\ EXCEPT class name & Only for use in attributes which generate an & \verb|subsidiaries allowed:| 
+\\ & expression which taken the extra argument "transition". & \ \ \verb|EXCEPT "postpone|
+\\ &(the way to make attributes do this has not &  \verb|  indefinitely"|
+\\ & been finalized yet) &
+\\ &  Compares the name of "transition" to "class name", and &
+\\ & returns  TRUE unless they are the same.  The &
+\\ & complement of ONLY. &
+\\\hline&&
+
+
+
+
+\\ ONLY WHEN expression & returns the value of "expression" & \verb|reconsiderable: ONLY WHEN|
+\\ && \begin{latex}\verb|  "rejected the first time"|\end{latex} 
+\\\hline&&
+
+
+
+\\ IF expression & synonym for ONLY WHEN & 
+\\\hline&&
+
+
+\\ ONLY class name & Only for use in attributes which generate an & \verb|subsidiaries allowed:| 
+\\ & expression which taken the extra argument "transition". & \ \ \begin{latex}\verb|ONLY 'previous question'|\end{latex} 
+\\ & (the way to make attributes do this has not &
+\\ & been finalized yet) &
+\\ &  Compares the name of "transition" to "class name", and &
+\\ & returns  TRUE if and only if they are the same.  The &
+\\ & complement of EXCEPT. & 
+\\\hline
+\end{tabular}
+\end{figure*}
+
+\begin{figure*}
+\begin{tabular}{|l|l|l|}
+\hline&&
+\\**Syntactical element** & **Meaning** & **Example**
+\\ or **Keyword** &&
+\\\hline&&
+
+\\ THIS INITIATIVE IS attribute name & returns the value of attribute  &  \verb|subsidiaries allowed:| 
+\\ & "attribute name" of this initiative & \verb|ONLY WHEN|
+\\ && \verb|    (this initiative|
+\\ && \verb|      is debatable)|
+\\\hline&&
+
+
+
+\\ THIS MOTION IS attribute name & synonym for "THIS INITIATIVE IS" &
+\\\hline&&
+\\ THIS IS attribute name & synonym for "THIS INITIATIVE IS" &
+\\\hline&&
+\\ THIS attribute name & synonym for "THIS INITIATIVE IS" &
+\\\hline&&
+
+
+\\ PARENT INITIATIVE IS attribute name & returns the value of attribute  &
+\\\hline&&
+
+
+
+\\ PARENT MOTION IS attribute name & synonym for "PARENT INITIATIVE IS" &
+\\\hline&&
+\\ PARENT IS attribute name & synonym for "PARENT INITIATIVE IS" &   \verb|debatable:| 
+\\ & "attribute name" of this initiative & \verb|ONLY WHEN|
+\\ && \verb|    PARENT IS debatable|
+\\\hline&&
+\\ PARENT attribute name & synonym for "PARENT INITIATIVE IS" &
+\\\hline&&
+
+
+
+\\ condition1 AND condition2 & returns boolean AND of condition1 &  \verb|subsidiaries allowed:| 
+\\ & and condition2 &
+\\ && \verb|  ONLY WHEN (this motion|
+\\ && \verb|    is debatable)|
+\\ && \verb|  AND (motion is "Lay on|
+\\ && \verb|    the table")|
+\\ && \verb|  OR (motion is 'Previous|
+\\ && \verb|    question')|
+\\\hline&&
+
+
+\\ condition1 OR condition2 & analogous to AND &
+\\\hline&&
+\\ NOT condition & analogous to AND &
+\\\hline&&
+
+\\ anymethod & Evaluated to the return value of  &
+\\ & \begin{latex}\verb|state.anymethod|\end{latex}.  & \verb|reconsiderable: ONLY WHEN|
+\\ & & \begin{latex}\verb|    (WAS_ACCEPTED)\end{latex}|
+
+
+
+\\\hline
+\end{tabular}
+\end{figure*}

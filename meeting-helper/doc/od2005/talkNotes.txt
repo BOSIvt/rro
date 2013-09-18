@@ -1,0 +1,16 @@
+* Robert's Rules of Order (Newly Revised, 10th Edition) is 704 pages
+
+* if you're a software developer, the goals of this talk are...
+** targeted at parliamentary software developers
+** convince you to use the parliament module
+** maybe even convince you to join the project and help develop the module
+* if you're not a software devel, i hope you'll come away with....
+
+* what it is, what it can be used for, advantages
+
+* You can write a parliamentary application without encoding hardcoding a parliamentary ruleset
+
+
+tell parliament what's happening in the outside world
+
+which actions are and aren't allowed by the ruleset

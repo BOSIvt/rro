@@ -1,0 +1,35 @@
+\documentclass{seminar}
+\usepackage[usenames]{color}
+\usepackage{type1cm}
+
+\flushheadingstop
+
+\slideframe{none}
+
+\fontsize{60}{60}\selectfont
+
+----
+\slideframe{none}
+\flushright
+ \fontsize{80}{80}\selectfont
+{\color{MidnightBlue} Parliament}: \\
+\fontsize{60}{60}\selectfont
+
+----
+\slideframe{none}
+\fontsize{50}{50}\selectfont
+\begin{flushright}
+A Software\\ 
+Parliamentary 
+\end{flushright}
+
+----
+\slideframe{none}
+\fontsize{50}{50}\selectfont
+Module for \\ 
+Procedure
+----
+
+
+
+

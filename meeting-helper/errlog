@@ -1,0 +1,6 @@
+(meeting_helper.py:5375): Gtk-WARNING **: GtkTextView - did not receive focus-out-event. If you
+connect a handler to this signal, it must return
+FALSE so the entry gets the event as well
+
+Gtk-ERROR **: file gtktextview.c: line 4482 (blink_cb): assertion failed: (GTK_WIDGET_HAS_FOCUS (text_view))
+aborting...

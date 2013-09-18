@@ -1,0 +1,9 @@
+*.vim
+*.pyc
+rro_default_ruleset.py
+*.mtg
+local_dev
+.idlerc
+build
+dist
+Output

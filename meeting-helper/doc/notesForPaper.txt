@@ -1,0 +1,8 @@
+question:
+
+
+* to what extent is this an application geared towards being displayed on a large projection, and to what extent is this an interface for someone to play around with?
+
+** for example: do we display summaries and tips when someone single-clicks on a motion in the motion selection box?
+
+  

@@ -1,0 +1,2 @@
+class ParliamentError(Exception):
+    pass

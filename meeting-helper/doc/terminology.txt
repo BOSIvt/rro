@@ -1,0 +1,8 @@
+transition  action   initiative     motion               (comments)
+-----------------------------------------------------------------------
+            valid    valid          in order/admissible  ...given state
+                     applicable to  applicable to        ...parent in tree
+            targets  targets        targets              something or nothing
+                     live           pending              not necessarily immediate
+                     open           immediately pending
+                     ancestors                           subset of live/pending

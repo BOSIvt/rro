@@ -1,0 +1,171 @@
+Here's a look at how a client might use the Parliament module. 
+
+
+------------- 
+------------- 
+First, the client starts up. It does initialization. 
+------------- 
+------------- 
+
+The client initializes the module, and tells it to use the default ruleset by specifying a path to the compiled ruleset:
+
+	p = Parliament.Parliament('rro_default_ruleset')
+
+The client tells Parliament that the meeting is in the "initial state" specified by this ruleset: 
+	
+	p.initState()
+
+------------- 
+------------- 
+The client wants to display a list of the currently valid actions to the user
+------------- 
+------------- 
+
+The client asks Parliament for a list of the actions which are valid in the current state:
+    
+	validActs = p.currentValidActs()
+
+
+
+The client makes a list of the titles and types of all the valid actions: (TODO: make this a function in Parliament):
+
+	l = []
+        for actIndex in range(len(validActs)):
+            act = validActs[actIndex]
+            actTitle = p.getTransition(act).title
+            actTypeInternal = p.getTransition(act).type(p.getCurrentState())
+            actType = p.getTransitionTitle(actTypeInternal)
+	    l.append((actTitle, actType))
+
+The client fetches the summary text for a particular action:
+
+	summary = p.getTransition(nameOfAction).summary(p.getCurrentState())
+
+
+------------- 
+------------- 
+The client wants to display a list of all actions to the user, whether or not they are valid in the current state
+------------- 
+------------- 
+
+The client fetches the names of all actions
+
+        validActs = p.nonAbstractActNames()
+
+------------- 
+------------- 
+The client wants to display the initiatives tree to the user, with the currently pending question highlighted
+------------- 
+------------- 
+
+The client gets the initiatives tree:
+
+        tree = p.getTransitionTree()
+
+
+The client gets the root of the initiatives tree:
+
+        root = p.getTransitionTreeRoot()
+
+
+The client gets the immediately pending question:
+
+	pend = p.getPendingMotion()
+
+------------- 
+------------- 
+The client wants to fetch the class "motion", perhaps in order to see if some specific action is a motion
+------------- 
+------------- 
+
+
+The client gets the built-in class "motion", from which all motions are subclassed:
+
+	motionClass = p.getTransitionClass('motion')
+
+------------- 
+------------- 
+The client wants to display some meeting history to the user
+------------- 
+------------- 
+
+The client gets the history of initiatives which have been created:
+	
+	list = p.getMeetingEventHistory()
+
+
+
+------------- 
+------------- 
+The user instructs the client to make a motion
+------------- 
+------------- 
+
+The client tells Parliament to apply the specified initiative to the default position in the initiative tree (remember, all motions are initiatives).
+
+	      p.applyToDefaultPosition(initiative)
+
+
+------------- 
+------------- 
+The user instructs the client that the motion has carried
+------------- 
+------------- 
+
+The client tells Parliament
+
+	      p.motionPassed()
+
+
+------------- 
+------------- 
+The user instructs the client to "undo" the last state change
+------------- 
+------------- 
+
+The client tells Parliament
+
+	      p.goBack()
+
+
+---- 
+example interactive session
+---- 
+
+Python 2.3.4c1 (#2, May 13 2004, 21:46:36) 
+[GCC 3.3.3 (Debian 20040429)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import Parliament
+>>> meeting_object = Parliament.Parliament('rro_default_ruleset')
+>>> meeting_object.initState()
+True
+>>> meeting_object.getOpenInitiatives()[0]                                     
+<Initiative.RootInitiative instance at 0x4020c90c>
+>>> validActs = meeting_object.currentValidActs()
+>>> validActs
+['main_motion', 'rescind', 'reconsider', 'make_a_special_order', 'make_a_general_order', 'division_of_the_assembly', 'motion_related_to_voting', 'point_of_order', 'point_of_information', 'appeal_from_decision_of_chair', 'suspend_the_rules', 'take_from_the_table', 'adjourn_as_principal', 'recess_as_principal', 'question_of_privilege_as_principal', 'call_for_the_orders_of_the_day_as_principal', 'limit_or_extend_debate', 'fix_time_to_which_to_adjourn']
+>>> meeting_object.applyToDefaultPosition('main_motion')
+>>> meeting_object.getOpenInitiatives()[0]
+<rro_default_ruleset.main_motion instance at 0x402c704c>
+>>> validActs = meeting_object.currentValidActs()
+>>> validActs
+['division_of_the_assembly', 'motion_related_to_voting', 'lay_on_the_table', 'previous_question', 'postpone_to_a_certain_time', 'refer_to_committee', 'amend', 'postpone_indefinitely', 'point_of_order', 'point_of_information', 'appeal_from_decision_of_chair', 'object_to_consideration', 'request_to_withdraw_motion', 'suspend_the_rules', 'adjourn_as_privileged', 'recess_as_privileged', 'question_of_privilege_as_privileged', 'call_for_the_orders_of_the_day_as_privileged', 'limit_or_extend_debate', 'fix_time_to_which_to_adjourn']
+>>> meeting_object.applyToDefaultPosition('lay_on_the_table')
+>>> currently_pending = meeting_object.getOpenInitiatives()[0]
+>>> currently_pending
+<rro_default_ruleset.lay_on_the_table instance at 0x402c7fcc>
+>>> currently_pending.parentInitiative()
+<rro_default_ruleset.main_motion instance at 0x402c734c>
+>>> currently_pending.affirmativeVotes = 5
+>>> currently_pending.negativeVotes = 4
+>>> meeting_object.finalizeVote(currently_pending)
+>>> meeting_object.getOpenInitiatives()[0]
+<Initiative.RootInitiative instance at 0x402cb44c>
+>>> meeting_object.getMeetingEventHistory()
+[<rro_default_ruleset.main_motion instance at 0x402c704c>, <rro_default_ruleset.lay_on_the_table instance at 0x402c7fcc>]
+>>> oldLayOnTheTable = meeting_object.getMeetingEventHistory()[1]
+>>> oldLayOnTheTable.getMotionResultInPastTense()
+'adopted'
+>>> oldMainMotion = meeting_object.getMeetingEventHistory()[0]
+>>> oldMainMotion.getMotionResultInPastTense()
+'tabled'

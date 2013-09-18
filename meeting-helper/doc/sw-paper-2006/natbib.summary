@@ -1,0 +1,94 @@
+NATBIB.STY summary               \ProvidesPackage{natbib}[1999/05/28 7.0 (PWD)]
+See also:  /turing/t8/local/lib/texmf/bibtex/natbib/natnotes.tex
+
+For author-year citations, \bibitem must have one of the following forms:
+    \bibitem[Jones et al.(1990)]{key}...
+    \bibitem[Jones et al.(1990)Jones, Baker, and Williams]{key}...
+    \bibitem[Jones et al., 1990]{key}...
+    \bibitem[\protect\citeauthoryear{Jones, Baker, and Williams}{Jones et al.}
+             {1990}]{key}...
+    \bibitem[\protect\citeauthoryear{Jones et al.}{1990}]{key}...
+    \bibitem[\protect\astroncite{Jones et al.}{1990}]{key}...
+    \bibitem[\protect\citename{Jones et al., }1990]{key}...
+    \harvarditem[Jones et al.]{Jones, Baker, and Williams}{1990}{key}...
+
+
+\cite{key}               -->  Jones et al. (1990)    (same as \citet)
+\citet{key}              -->  Jones et al. (1990)
+\citep{key}              -->  (Jones et al., 1990)
+
+\citep{key1,key2}        -->  (Jones et al., 1990; Smith, 1989)
+                          or  (Jones et al., 1990, 1991)
+                          or  (Jones et al., 1990a,b)
+
+\citep[chap. 2]{key}     -->  (Jones et al., 1990, chap. 2)
+\citep[e.g.,][]{key}     -->  (e.g., Jones et al., 1990)
+\citep[see][pg. 34]{key} -->  (see Jones et al., 1990, pg. 34)
+
+\citet*{key}             -->  Jones, Baker, and Williams (1990)
+\citep*{key}             -->  (Jones, Baker, and Williams, 1990)
+\citealt{key}            -->  Jones et al. 1990
+\citealt*{key}           -->  Jones, Baker, and Williams 1990
+\citealp{key}            -->  Jones et al., 1990
+\citealp*{key}           -->  Jones, Baker, and Williams, 1990
+\citeauthor{key}         -->  Jones et al.
+\citeauthor*{key}        -->  Jones, Baker, and Williams
+\citeyear{key}           -->  1990
+\citeyearpar{key}        -->  (1990)
+\citetext{priv. comm.}   -->  (priv. comm.)
+
+\Citeauthor{dRob98}      -->  Della Robbia          (capitalize "della Robbia")
+\Citet{dRob98}           -->  Della Robbia (1998)
+\Citep{dRob98}           -->  (Della Robbia, 1998)
+
+\defcitealias{key}{text}                            (alias)
+\citetalias{key}         -->  text
+\citepalias{key}         -->  (text)
+
+
+Defining the citation style of a given bib style:
+Use \bibpunct (in the preamble only) with 6 mandatory arguments:
+   1. opening bracket for citation
+   2. closing bracket
+   3. citation separator (for multiple citations in one \cite)
+   4. the letter n for numerical styles, s for superscripts
+       else anything for author-year
+   5. punctuation between authors and date
+   6. punctuation between years (or numbers) when common authors missing
+One optional argument is the character coming before post-notes. It
+appears in square braces before all other arguments. May be left off.
+Example (and default) \bibpunct[, ]{(}{)}{;}{a}{,}{,}
+
+To make this automatic for a given bib style, named newbib, say, make
+a local configuration file, natbib.cfg, with the definition
+  \newcommand{\bibstyle@newbib}{\bibpunct...}
+Then the \bibliographystyle{newbib} will cause \bibstyle@newbib to
+be called on THE NEXT LATEX RUN (via the aux file).
+
+Such preprogrammed definitions may be invoked in the text (preamble only)
+by calling \citestyle{newbib}. This is only useful if the style specified
+differs from that in \bibliographystyle.
+
+With \citeindextrue and \citeindexfalse, one can control whether the
+\cite commands make an automatic entry of the citation in the .idx
+indexing file. For this, \makeindex must also be given in the preamble.
+
+Sample call and options for punctuation:
+
+  \usepackage[square,comma]{natbib}
+
+  round           round parentheses are used (default)
+  square          square brackets are used   [option]
+  curly           curly braces are used      {option}
+  angle           angle brackets are used    <option>
+  colon           multiple citations separated by semicolon (default)
+  comma           multiple citations separated by comma
+  authoryear      selects author-year citations (default)
+  numbers         selects numerical citations
+  super           numerical citations as superscripts
+  sort            sorts multiple citations according to order in ref. list
+  sort&compress   like sort, but also compresses numerical citations
+  longnamesfirst  makes first citation full author list
+  sectionbib      puts bibliography in a \section* instead of \chapter*
+
+Punctuation so selected dominates over any predefined ones.

@@ -1,0 +1,10 @@
+easyLatexGraph*
+*.aux
+*.dvi
+*.log
+*.ps
+*.pdf
+*.blg
+*.bbl
+*.out
+sigproc-sp.tex

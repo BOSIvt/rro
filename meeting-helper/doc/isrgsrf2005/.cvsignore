@@ -1,0 +1,11 @@
+*.pdf
+*.ps
+*.tex
+*.log
+*.aux
+*.dvi
+*.bbl
+*.blg
+easyLatexGraph*
+.xvpics
+shot1-full.png

@@ -1,0 +1,208 @@
+BUGS
+
+  Traceback (most recent call last):
+    File "/usr/lib/python2.3/site-packages/PythonCard/widget.py", line 417, in _dispatch
+      handler(background, aWxEvent)
+    File "./meeting_helper.py", line 86, in on_list_itemActivated
+      self.p.applyToDefaultPosition(action)
+    File "/home/dana/research/deliberation/parliament/Parliament.py", line 250, in applyToDefaultPosition
+      parent = initiative.find_targets(self.curState)[0]
+  IndexError: list index out of range
+
+
+  Traceback (most recent call last):
+    File "/usr/lib/python2.3/site-packages/PythonCard/widget.py", line 417, in _dispatch
+      handler(background, aWxEvent)
+    File "./meeting_helper.py", line 217, in on_initiativeTree_selectionChanged
+      self.components.actionInfo.SetValue(sel.notes)
+  AttributeError: class UncopyableStatePointer has no attribute 'notes'
+
+------------------------------------------------------------------------
+general friendliness
+
+* Windows and MacOS: executables, packages?
+
+* package Python code?
+
+------------------------------------------------------------------------
+main features
+
+* name of assembly; then default save name is name with date
+
+* properties attached to meeting (i.e. meeting type, location, reports)
+
+* generate reports
+ - report types / standard options
+  - meeting log
+  - carried main motions report
+  - notes as in Jones book
+  - minutes roughly according to RROR:
+
+    ASSEMBLY NAME
+    [Adjourned ](Regular|Special) Meeting
+    DATE
+    
+    Chair: NAME
+    Secretary: NAME
+  
+    Called to order at TIME.
+  
+    The minutes of the previous meeting were[ read and] approved[ as corrected].
+  
+    Reports
+  
+    (reports submitted as written, or summarized by secretary)
+  
+    Business
+  
+    * main motion (unless withdrawn) 
+      MOVER made a main motion.
+      The main motion[, after amendment,] was finally (adopted|rejected) as
+      follows: "WORDING"
+    * points of order and appeals, whether sustained or lost
+      MOVER rose to a point of order, which was (sustained|
+    * all other motions that were not lost or withdrawn
+      On motion of MOVER, ...
+    * when votes are counted
+      the number of votes on each side
+    * when voting by yeas and nays (roll call)
+      a list of the names of those voting on each side
+  
+    Adjourned at TIME[ on motion of MOVER].
+
+* save file compatibility across versions
+
+* agendas, orders of the day, order of business
+
+* floor control, speakers' list (1st and 2nd), limits on debate, etc.
+
+------------------------------------------------------------------------
+interface
+
+* take-from-table GUI
+
+* in mtng history, when you click on a motion, it "selects" it and gives you movers, target, etc
+
+* "view" menu and viewers for motions on the table, motions that passed, motions that failed
+
+* rro reference attribute, and link to rules
+
+* align GUI elements neatly
+
+* motions without votes don't exactly "pass" or "fail"...
+
+* prev Q: "end debate and vote"
+
+* "ignore the rules" button should allow you to select any target
+
+* "ignore the rules" or "ignore constraints"?
+
+* if you type into text box when nothing is pending, then you make a motion, the stuff in the text box feels like it should associate with the new motion, but what happens is it associates with the root transition
+
+------------------------------------------------------------------------
+RRO correctness and completeness
+
+* take from table semantics
+
+* semantics of everything that can get rid of a motion; refer to committee, postpone indefinitely, obj. to consideration, etc
+
+* subsidiaries allowed?
+
+* more motions
+ - "div of the question"
+ - "informal consideration of a question" (speak more than twice)
+
+* "only allowed during or after" --> "relates to voting"
+
+* change withdraw to withdraw pending Q?
+
+* obj to consideration: 
+  should take precedence over undebated main/principal motions, 
+  unstated subsidiary motions except lay on the table
+  yields to privileged motions
+  yields to incidental motions arising out of itself
+  cannot be applied to incidental main motions
+  no subsidiary motion can be applied to the objection
+  while obj is pending, the main motion can be laid on the table
+  in order when someone else has the floor
+
+------------------------------------------------------------------------
+deep in the code
+
+* error handling
+
+* change terminology: introduce the name "event"
+
+* 'motion postponed' btn: neither pass nor fail (?)
+
+* change "prevMotion" to "pendingMotion"
+
+* getPendingMotion --> getOpenInitiatives
+
+* getPendingMotion --> currentInitiative
+
+* should be able to ask if an initatiative is valid for a specific position
+
+* getTargetType() should be in Parliament module
+
+* getOpenInitiatives should return a list
+
+* bool isSerialRuleset() in Parliament
+
+* ancestral main motion target type
+
+* getTargetType --> getRequestedTargetType
+
+* generic attribute lists for states and transitions; the GUI can ask a state or transition, "what attributes do you have that users might want to view? what are their names? what are their values? what are their types?" (python introspection can do most of this)
+
+* generic "lists of motions and of subtrees"; i.e. like motionTables and subtreeTables; same as generic attrib lists; instead of hardcoding "the list of passed motions" into the GUI, it could dynamically generate those menu items by asking Parliament what is available
+
+* generalize tabling, discarding (motion "status") to initiatives
+
+* pythonic use of 'property'
+
+* things depending on conditional types: "fix time to which to adjourn as priviledged"
+
+* "if previous motion" in compiler to "if parent motion"
+
+* fix vars 
+
+* maybe don't eliminate "state" arg; it wants the current state, right? hmmm
+
+* isInitiative, etc in Parliament module
+
+------------------------------------------------------------------------
+other/unsorted
+
+* wiki consensus stuff
+** consensus, not easy to get things done
+** pages, not motions
+** parallel, not serial
+** more discussion oriented
+
+* teacher
+
+* three notions: target, parent, and immediately pending question
+
+* target = "applicability"
+
+* "in order"
+
+* as a community, incidental motions are like a band of outlaws or anarchists
+
+* principles:
+** assembly can always adjourn
+
+* problem with making ALL targets yield for a subsidiary?
+
+* maybe don't eliminate "state" arg; it wants the current state, right? hmmm
+
+* isInitiative, etc in Parliament module
+
+attribs:
+* debatable
+* amendable
+* vote req'd
+** seconded
+** reconsidered
+** in order when another has floor

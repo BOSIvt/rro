@@ -1,0 +1,750 @@
+# OUT OF DATE
+#  may not run
+
+
+# COPYRIGHT 2004 BAYLE SHANKS
+#  Available under the GPL license
+#
+#  Partially based on Henry Prakken's excellent formalization of a large part of Robert's Rules 
+
+# It should be noted that no effort is being made to make these rules strictly conform to the any version of Robert's Rules of Order. These rules are an almagation of Henry Prakken's formalization, of the 1915 version of Robert's Rules, and of suggestions by various people.
+# Note that there is also an updated version of Robert's Rules which you can buy as a book. I don't have the book, and so these rules DO NOT reflect the "current" version of RRO.
+# At some future time perhaps a version strictly following the 1915 version of RRO will be released.
+
+
+##
+## NOTE: 
+##  I made one predicate, subsidiaries allowed, which covers amendments
+##  unless AMENDABLE is specified. Should probably be clarified.
+## 
+
+
+-----------------
+TITLE: RRO Motion
+TYPE: Motion (ABSTRACT)
+
+debatable: yes
+in order when another has floor: no
+requires second: yes
+required majority: .5
+decision mode: "vote"
+subsidiaries allowed: EXCEPT 'postpone indefinitely'
+# RRO section ref: 24
+
+renewable: yes
+# but only after the state of affairs has changed
+reconsiderable: yes
+to be entered on the record when made: no
+amendable: IF this motion (SUBSIDIARIES ALLOWED)
+requires previous motion: no
+category: "none"
+purpose: "unknown"
+
+{
+def isValid(self, state): 
+    return state.prevMotion().allowsApplicationOf(state, self)
+} 
+
+{
+def allowsApplicationOf(self, state, transition):
+
+    if isinstance(transition, amendment):
+       return self.amendable(state, transition)
+
+    if isinstance(transition, subsidiary_motion):
+       return self.subsidiaries_allowed(state, transition)
+	  
+    if isinstance(transition, principal_motion):
+       return False		  
+
+    return True
+
+
+    
+} 
+
+-----------------
+TITLE: Privileged motion
+TYPE: RRO Motion (ABSTRACT)
+
+debatable: no
+
+-----------------
+TITLE: Incidental motion
+TYPE: RRO Motion (ABSTRACT)
+
+debatable: no
+amendable: no
+subsidiaries allowed: EXCEPT 'postpone indefinitely'
+
+RRO SECTION REF: "8"
+
+-----------------
+TITLE: Subsidiary motion
+TYPE: RRO Motion (ABSTRACT)
+
+RRO SECTION REF: "7"
+
+-----------------
+TITLE: Privileged motion
+TYPE: RRO Motion (ABSTRACT)
+
+debatable: no
+# extra RRO section ref for non-debatability: 35
+
+RRO SECTION REF: "9"
+-----------------
+TITLE: Principal motion
+TYPE: RRO Motion (ABSTRACT)
+
+renewable: yes
+subsidiaries allowed: yes
+
+RRO SECTION REF: "6"
+
+-----------------
+TITLE: Unlisted principal motion
+
+TYPE: Principal motion
+
+category: "primary"
+purpose: "primary"
+
+-----------------
+TITLE: Rescind 
+MOTION TO FORM OF TITLE: "Motion to rescind"
+
+TYPE: Principal motion 
+
+SUMMARY: "When an assembly wishes to annul some previous action and no other procedural resource is available, it can still rescind the action." 
+
+category: "action"
+purpose: "anti"
+
+RRO SECTION REF: "25"
+
+-----------------
+TITLE: Reconsider 
+MOTION TO FORM OF TITLE: "Motion to reconsider"
+
+TYPE: Principal motion 
+
+SUMMARY: "This motion can be used to ask for a new vote on a previously decided motion."
+
+category: "action"
+purpose: "anti"
+
+In order when another has floor: YES
+Reconsiderable: NO
+
+debatable: ONLY WHEN PREVIOUS MOTION IS debatable
+subsidiaries allowed:  YES
+amendable: NO
+
+# "Another {it interpretation problem/} is that RRO does not explicitly comment on whether postpone indefinitely/to certain day and commit apply to this motion. (This is a special case of the interpretation problem for all principal motions.)" 
+
+#"The following rules say that a motion to reconsider all motions other than incidental or subsidiary motions is to be entered on the record; and a motion to reconsider an incidental or a subsidiary motion is to be entered unless the vote on that motion had the effect of removing the entire subject from before the assembly (RRO 27, pp. 77--8). (This latter predicate has to be defined by further rules.)"
+
+RRO SECTION REF: "26,27"
+
+-----------------
+TITLE: Extending the limits of debate 
+MOTION TO FORM OF TITLE: "Motion to extend the limits of debate"
+
+TYPE: Principal motion 
+
+category: "regulatory"
+purpose: "talk more"
+
+SUMMARY: 
+
+Debatable: NO
+Required majority: 2/3
+subsidiaries allowed:  NO
+# from RRO 1915 text
+
+RRO SECTION REF: "34"
+
+-----------------
+TITLE: Leave to continue speaking after indecorum 
+MOTION TO FORM OF TITLE: "Leave to continue speaking after indecorum"
+
+TYPE: Principal motion 
+
+SUMMARY: "When the chair has ruled that a speaker has violated decorum in debate, then, if any member objects, the speaker can only continue after obtaining leave from the assembly."
+
+category: "regulatory"
+purpose: "meta"
+
+debatable: NO
+subsidiaries allowed:  YES 
+amendable: NO
+
+RRO SECTION REF: "36"
+
+-----------------
+TITLE: Limiting debate 
+MOTION TO FORM OF TITLE: "Motion to limit debate"
+
+TYPE: Principal motion 
+
+SUMMARY: 
+
+category: "regulatory"
+purpose: "hasten action"
+
+Debatable: NO
+Required majority: 2/3
+subsidiaries allowed:  NO
+# from RRO PD text
+
+RRO SECTION REF: "37"
+
+-----------------
+TITLE: Closing debate at certain time 
+MOTION TO FORM OF TITLE: "Motion to close debate at certain time"
+
+TYPE: Principal motion 
+
+SUMMARY: 
+
+category: "regulatory"
+purpose: "hasten action"
+
+Debatable: NO
+Required majority: 2/3
+subsidiaries allowed:  NO
+# from RRO PD text
+
+RRO SECTION REF: "37"
+
+-----------------
+TITLE: To take up a question out of its proper order 
+MOTION TO FORM OF TITLE: "Motion to take up a question out of its proper order"
+
+TYPE: Principal motion 
+
+SUMMARY: 
+
+category: "meta"
+purpose: "hasten action"
+
+Required majority: 2/3
+subsidiaries allowed:  NO
+# from RRO PD text
+
+RRO SECTION REF: "39"
+
+-----------------
+TITLE: Make a special order 
+MOTION TO FORM OF TITLE: "Motion to make a special order"
+
+TYPE: Principal motion 
+
+SUMMARY: "A special order  makes a question part of the orders of the day in such a way that it can be taken up disregarding any rule that might interfere with its consideration at the time specified."
+
+category: "scheduling"
+purpose: "hasten action"
+
+Required majority: 2/3
+
+RRO SECTION REF: "13"
+
+-----------------
+TITLE: Make a general order 
+MOTION TO FORM OF TITLE: "Motion to make a general order"
+
+TYPE: Principal motion 
+
+SUMMARY: "A general order also makes a question part of the orders of the day, but it does not suspend rules that might interfere with its consideration at the time specified."
+
+category: "scheduling"
+purpose: "hasten action"
+
+RRO SECTION REF: "13"
+
+-----------------
+TITLE: Ordering of ballot 
+MOTION TO FORM OF TITLE: "Ordering of ballot"
+
+TYPE: Principal motion 
+
+SUMMARY: "This motion orders for voting by ballot."
+
+category: "misc"
+purpose: "meta"
+
+RRO SECTION REF: "38"
+
+-----------------
+TITLE: Ordering of roll call 
+MOTION TO FORM OF TITLE: "Ordering of roll call"
+
+TYPE: Principal motion 
+
+SUMMARY: "This motion orders for voting by roll call."
+
+category: "misc"
+purpose: "meta"
+
+RRO SECTION REF: "38"
+
+-----------------
+TITLE: Lay on the table 
+MOTION TO FORM OF TITLE: "Motion to lay on the table"
+
+TYPE: Subsidiary motion
+
+SUMMARY: "The objective of this motion is to temporarily lay a question aside, in order to take up more urgent business."
+
+debatable: NO
+subsidiaries allowed: NO
+reconsiderable: ONLY WHEN (WAS_ACCEPTED)
+
+TARGET: ancestor motion
+ON PASS: table target
+
+category: "scheduling"
+purpose: "delay"
+
+
+## it is noted that a fundamental parlimentary principal is that suppression of debate should not happen w/o a 2/3 vote, and that this motion is in direct conflict to that. It is recommended that, if your assembly habitually abuses this motion to supress debate, then it should be changed to require a 2/3 vote.
+
+RRO SECTION REF: "19"
+
+-----------------
+TITLE: Previous question 
+MOTION TO FORM OF TITLE: "Previous question"
+
+TYPE: Subsidiary motion
+
+SUMMARY: "This is a motion to immediately end debate on the pending question and put it to vote."
+
+category: "regulatory"
+purpose: "hasten action"
+
+ 
+Debatable: NO
+Required majority: 2/3
+subsidiaries allowed: NO
+reconsiderable: ONLY WHEN "not (partly) executed"
+
+
+RRO SECTION REF: "20"
+
+-----------------
+TITLE: Postpone to a certain day 
+MOTION TO FORM OF TITLE: "Motion to postpone to a certain day"
+
+TYPE: Subsidiary motion
+
+category: "scheduling"
+purpose: "delay"
+
+
+# TODO: reconsiderable?
+
+subsidiaries allowed: ONLY 'previous question'
+
+amendable: ONLY WHEN "changes time of when the motion is being postponed to"
+   # or, "a motion to postpone to a certain day is only amendable by amending the time"
+
+debatable: YES
+  ## but "not further than necessary for enabling the assembly to judge the propriety of the postponement"
+
+
+RRO SECTION REF: "21"
+
+-----------------
+TITLE: Refer to a committee 
+MOTION TO FORM OF TITLE: "Motion to refer to a committee"
+
+TYPE: Subsidiary motion
+
+SUMMARY: "The object of this motion is to have the motion clarified by a committee, before it can be dealt with by the assembly."
+
+category: "action"
+category: "scheduling"
+purpose: "delay"
+
+
+subsidiaries allowed: NO
+  ## note: this seems to disagree with the 1915 text, but I'll go with Prakken.
+
+AMENDABLE: ONLY WHEN "Alters committee" OR "instructs committee"
+      
+# "These two rules say that a motion to refer to a committee is only amendable by altering the committee, or giving it instructions."
+
+
+
+RRO SECTION REF: "22"
+
+-----------------
+TITLE: Amendment 
+MOTION TO FORM OF TITLE: "Amendment"
+
+TYPE: Subsidiary motion
+
+category: "action"
+purpose: "primary"
+
+Renewable: NO
+
+subsidiaries allowed: ONLY 'previous question'
+  
+AMENDABLE: YES
+       # unless parent is also an amendment; i.e. you can amend an amendment, but you can't amend that
+
+
+RRO SECTION REF: "23"
+
+-----------------
+TITLE: Filling blanks 
+MOTION TO FORM OF TITLE: "Filling blanks"
+
+TYPE: Amendment
+
+SUMMARY: 
+
+category: "action"
+purpose: "primary"
+
+Requires second: NO
+
+RRO SECTION REF: "23"
+
+# different motions for filling blanks are not treated as amendments of each other, but rather as different amendements of the underlying motion
+
+-----------------
+TITLE: Nomination 
+MOTION TO FORM OF TITLE: "Nomination"
+
+TYPE: Amendment 
+
+SUMMARY: 
+
+category: "action"
+purpose: "primary"
+
+Requires second: NO
+
+RRO SECTION REF: "23"
+
+# different motions for filling blanks are not treated as amendments of each other, but rather as different amendements of the underlying motion
+
+-----------------
+TITLE: Postpone indefinitely 
+MOTION TO FORM OF TITLE: "postpone indefinitely"
+
+TYPE: Subsidiary motion
+purpose: "anti"
+
+SUMMARY: 
+
+category: "action"
+
+subsidiaries allowed: ONLY 'previous question'
+
+
+RRO SECTION REF: "24"
+
+-----------------
+TITLE: Question of order 
+MOTION TO FORM OF TITLE: "Question of order"
+
+TYPE: Incidental motion 
+
+Requires second: NO
+Decision mode: YES
+subsidiaries allowed: NO
+
+category: "meta"
+purpose: "meta"
+
+RRO SECTION REF: "14"
+
+-----------------
+TITLE: Appeal decision of chair
+MOTION TO FORM OF TITLE: "Appeal chair decision of chair"
+
+TYPE: Incidental motion 
+
+SUMMARY: "An appeal can be made to any decision of the chair."
+
+category: "regulatory"
+purpose: "meta"
+
+In order when another has floor: YES
+# "see table on p. 11"
+
+debatable:
+  ONLY WHEN NOT (PREVIOUS_QUESTION_PENDING) AND ("the appeal does not relate to indecorum, to transgressions of rules of speaking, or to priority of business")
+
+   ## If the appeal is debatable, and if any of "lay on the table",  "postpone", or "previous question" are passed in regards to the appeal, they also apply to the main question. For example, " Thus, if the appeal is from the decision that a proposed amendment is out of order and the appeal is laid on the table, it would be absurd to come to final action on the main question and then afterwards reverse the decision of the chair and take up the amendment when there was no question to amend."
+
+subsidiaries allowed:
+    ONLY WHEN (this motion is DEBATABLE) AND (motion is 'Lay on the table') OR (motion is 'Previous question')
+
+## An appeal must be made immediately after the decision to be appealed, w/o and intervening business.
+
+RRO SECTION REF: "14"
+
+-----------------
+TITLE: Objection to the consideration of a question 
+MOTION TO FORM OF TITLE: "Objection to the consideration of a question"
+
+TYPE: Incidental motion 
+
+SUMMARY: "The objective of this motion is to entirely remove the subject from before the assembly."
+
+category: "action"
+purpose: "anti"
+
+requires previous motion: yes
+In order when another has floor: YES
+Requires second: NO
+Required majority: 2/3
+subsidiaries allowed: NO
+
+RRO SECTION REF: "15"
+
+-----------------
+TITLE: Request to read papers 
+MOTION TO FORM OF TITLE: "Request to read papers"
+
+TYPE: Incidental motion 
+
+SUMMARY: 
+
+category: "action"
+purpose: "primary"
+
+RRO SECTION REF: "16"
+
+-----------------
+TITLE: Withdrawal of a motion 
+MOTION TO FORM OF TITLE: "Withdrawal of a motion (17)"
+
+TYPE: Incidental motion 
+
+TARGET: ancestor motion
+# actually, it's supposed to be a motion made by you, i believe
+
+in order when another has floor: yes
+
+requires previous motion: yes
+requires second: no
+
+ON PASS: withdraw target
+
+
+SUMMARY: 
+
+category: "action"
+purpose: "anti"
+
+RRO SECTION REF: "17"
+
+# note: actually this one is kind of complicated; the chair is supposed to quickly ask for objections. if there are any, then the chair moves to permit withdrawal, and two people are supposed to second. then there must be a vote.
+
+-----------------
+TITLE: Suspension of the rules 
+MOTION TO FORM OF TITLE: "Motion to suspend the rules"
+
+TYPE: Incidental motion 
+
+SUMMARY: 
+
+category: "meta"
+purpose: "hasten action"
+
+Reconsiderable: NO
+
+required majority:
+  WHEN ("Deprives at most 1/3 of members of their right"): .5
+  WHEN ("Possibly deprives more than 1/3 of members of their right"): 2/3
+
+subsidiaries allowed: NO
+
+renewable: NO
+  ## Is renewable after an adjournment. But I assume that will happen by default anyways, without specifically programming that in.
+
+  ## of course, it's renewable by general consent even so 
+
+  ## NOTE: You can't suspend a rule that protects absentees, even by unanimous consent. That must be done in the bylaws. 
+  
+RRO SECTION REF: "18"
+
+-----------------
+TITLE: Take from the table 
+MOTION TO FORM OF TITLE: "Motion to take from the table"
+
+TYPE: Principal motion 
+
+SUMMARY: "This motion can be used to order that motions laying on the table (19) are taken up again by the assembly."
+
+category: "scheduling"
+purpose: "hasten action"
+
+# Prakken had ref: "laying on the table (19) are taken up again by the assembly"
+Debatable: NO
+subsidiaries allowed: NO
+# prakken's ref: RRO 19, pp. 54,56
+  
+RECONSIDERABLE: ONLY WHEN "rejected the first time"
+
+RRO SECTION REF: "19"
+
+-----------------
+TITLE: Fix time of adjournment
+
+TYPE:
+    WHEN (ANOTHER_MOTION_IS_PENDING): PRIVILAGED
+    WHEN (NOT ANOTHER_MOTION_IS_PENDING): PRINCIPAL
+  (motion)
+
+-----------------
+{
+def fix_time_of_adjournment(state):
+    if state.openForPrincipalMotion():
+       return fix_time_of_adjournment_as_principal_motion(state)
+    else:
+	return fix_time_of_adjournment_as_privileged_motion(state)
+}
+
+# TODO: automate this "conditional type" handling 
+#   user should be able to just type:
+#TYPE:
+#    WHEN (ANOTHER_MOTION_IS_PENDING): PRIVILAGED
+#    WHEN (NOT ANOTHER_MOTION_IS_PENDING): PRINCIPAL
+#  (motion)
+
+# the (motion) at the end is the "at the least, we're this" base class
+#  i guess you could get this by performing inference, but 
+#   no time to write that now
+
+
+-----------------
+TITLE: Fix time of adjournment as principal motion
+MOTION TO FORM OF TITLE: "Motion to fix time of adjournment (principal motion)"
+
+SUMMARY:  
+
+TYPE: PRINCIPAL MOTION (ABSTRACT)
+
+category: "meta"
+purpose: "adjourn"
+
+amendable: 
+  ONLY WHEN "Amendment changes the time of proposed adjournment"
+
+subsidiaries allowed:
+  EXCEPT 'postpone indefinitely'
+
+RRO SECTION REF: "10"
+
+-----------------
+TITLE: Fix time of adjournment as privileged motion
+MOTION TO FORM OF TITLE: "Motion to fix time of adjournment (privilaged motion)"
+
+SUMMARY:  
+
+TYPE: PRIVILEGED MOTION (ABSTRACT)
+
+category: "meta"
+purpose: "adjourn"
+
+amendable: 
+  ONLY WHEN "Amendment changes the time of proposed adjournment"
+
+subsidiaries allowed:
+  EXCEPT 'postpone indefinitely'
+
+RRO SECTION REF: "10"
+
+
+
+-----------------
+TITLE: Adjourn 
+MOTION TO FORM OF TITLE: "Motion to adjourn"
+
+TYPE: Privileged motion
+
+SUMMARY:  
+
+category: "meta"
+purpose: "adjourn"
+
+reconsiderable: NO
+subsidiaries allowed: NO
+renewable: ONLY WHEN "Business has been transacted or progress has been made in debate since the last time it was made/renewed"
+
+RRO SECTION REF: "11"
+
+-----------------
+TITLE: Question of privilege 
+MOTION TO FORM OF TITLE: "Question of privilege"
+
+TYPE: Privileged motion
+
+SUMMARY: "This motion concerns a question relating to the rights and privileges of the assembly, or any of its members."
+
+category: "meta"
+purpose: "meta"
+
+Debatable: YES
+
+in order when another has floor: 
+  ONLY WHEN "Requires immediate action"
+
+subsidiaries allowed: YES
+
+RRO SECTION REF: "12, 9, 35"
+
+-----------------
+TITLE: Call for the orders of the day 
+MOTION TO FORM OF TITLE: "Call for the orders of the day"
+
+TYPE: Privileged motion
+
+SUMMARY: "Some motions are assigned to a special time. When that time comes, this motion can be used to call them up."
+
+category: "scheduling"
+purpose: "hasten action"
+
+In order when another has floor: YES
+Requires second: NO
+subsidiaries allowed:
+  EXCEPT 'postpone indefinitely'
+amendable: NO
+renewable:
+     ONLY WHEN "the business that was pending when it was first made has been dealt with"
+     ## should formalize
+
+RRO SECTION REF: "13, 61 (p. 198)"
+
+-----------------
+TITLE: INITIAL STATE
+TYPE: State
+
+{
+def previous_question_pending(self):
+    return False	
+
+def initialStateAllowsApplicationOf(self, state, transition):    
+    if isinstance(transition, subsidiary_motion):
+       return False
+
+    if transition.requires_previous_motion(self):
+       return False
+       
+    return True 
+
+def openForPrincipalMotion(self):
+    return isinstance(self.getPendingMotion(), RootInitiative)
+}
+
+# each rulefile MUST include an "initial state"
+
+-----------------
+
